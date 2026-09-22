@@ -5,7 +5,7 @@ import { makeReplay,replayEvents } from '/shared/replay.js';
 import { analyzeMatch,toCsv } from '/shared/analytics.js';
 import { el,fmt,pct,time,table,renderMatchAnalytics,renderProfile,renderOperator } from '/analytics-ui.js';
 const $=id=>document.getElementById(id),uuid=()=>crypto.randomUUID();
-let me=null,current=null,selected=0,noteMode=false,difficulty='normal',notes=Array(81).fill(0),stream=null,busy=false,currentView='play';
+let me=null,current=null,selected=0,noteMode=false,difficulty='jev',notes=Array(81).fill(0),stream=null,busy=false,currentView='play';
 let stateReceived=performance.now(),report=null,telemetry=[],focusStart=performance.now(),hiddenAt=null,leaderboardCursor=null;
 let local=null,localEvents=[],localInitial=null,localTimer=null,localStarted=0,replay=null,replayMode=false,reportMatchId=null;
 const storage={get:(key,fallback=null)=>{try{const value=localStorage.getItem(key);return value===null?fallback:JSON.parse(value);}catch{return fallback;}},set:(key,value)=>{try{localStorage.setItem(key,JSON.stringify(value));}catch{}},remove:key=>{try{localStorage.removeItem(key);}catch{}}};
@@ -144,7 +144,7 @@ function beginOffline(){const copy=current?.givens?{givens:current.givens,human:
 function openReplay(data){replayEvents(data);replay=data;replayMode=true;stream?.close();$('replay-controls').hidden=false;$('replay-slider').max=String(data.events.length);$('replay-slider').value=String(data.events.length);showView('play');scrubReplay(data.events.length);record('replay_opened');}
 function scrubReplay(n){const part={...replay,events:replay.events.slice(0,n),finalState:undefined};const state=replayEvents(part);current={...publicState(state,{reveal:true}),id:'replay',opponent:'Recorded opponent',verified:false};notes=Array(81).fill(0);$('replay-position').textContent=`${n} / ${replay.events.length}`;stateReceived=performance.now();render();$('timer').textContent=time(state.elapsedMs);}
 async function boot(){buildBoards();render();$('leaderboard-date').value=new Date().toISOString().slice(0,10);
-  difficulty=storage.get('jev-difficulty','normal');if(!['easy','normal','hard','jev'].includes(difficulty))difficulty='normal';setDifficulty(difficulty);
+  difficulty=storage.get('jev-difficulty','jev');if(!['easy','normal','hard','jev'].includes(difficulty))difficulty='jev';setDifficulty(difficulty);
   const fragment=new URLSearchParams(location.hash.slice(1));if(fragment.has('launch')){sessionStorage.setItem('jev-launch',fragment.get('launch'));history.replaceState(null,'',location.pathname);}
   if(fragment.has('login')){notice(fragment.get('login')==='success'?'Signed in with Discord.':'Discord sign-in could not be completed. Practice remains available.');history.replaceState(null,'',location.pathname);}
   try{

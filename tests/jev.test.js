@@ -13,3 +13,16 @@ test('malformed output retries once then explicit heuristic fallback',async()=>{
 test('timeout is bounded and produces explicit fallback',async()=>{const adapter=new JevAdapter(config,{fetchImpl:async(_,o)=>new Promise((resolve,reject)=>o.signal.addEventListener('abort',()=>reject(new Error('aborted'))))});const result=await adapter.choose(params);assert.equal(result.reason,'timeout');assert.equal(result.attempts,2);});
 test('authentication failure and long Retry-After are not hammered',async()=>{for(const status of [401,429]){let count=0;const a=new JevAdapter(config,{fetchImpl:async()=>{count++;return new Response('',{status,headers:{'retry-after':'60'}});}});const r=await a.choose(params);assert.equal(count,1);assert.equal(r.source,'heuristic_fallback');}});
 test('missing credentials, forced steps, and concurrency caps are explicit',async()=>{const noKey=new JevAdapter({...config,jevKey:''});assert.equal((await noKey.choose(params)).source,'heuristic');const forced=new JevAdapter(config);assert.equal((await forced.choose({...params,bundle:{...bundle,candidates:[c[0]]}})).source,'forced');const full=new JevAdapter(config);full.inflight=2;assert.equal((await full.choose(params)).reason,'provider_concurrency_limit');});
+
+/** The provider reports probabilities on a 0.01 grain, so a real distribution never sums to
+ *  exactly 1. payload() above returns an exact one-hot distribution the provider never
+ *  produces, which is why the suite passed against a tolerance that rejected every live
+ *  response. This fixture is shaped the way the live provider actually answers. */
+const roundedPayload=()=>{const ids=c.map(x=>x.id).sort();const p=Object.fromEntries(ids.map((id,i)=>[id,i?.04:.34]));
+  return {model:config.jevModel,answers:{next_action:{type:'choice',choice:ids[0],confidence:.62,probabilities:p}},usage:{input_tokens:18622,output_tokens:835}};};
+test('provider-rounded distribution validates',()=>{const p=roundedPayload();const sum=Object.values(p.answers.next_action.probabilities).reduce((s,x)=>s+x,0);
+  assert.ok(Math.abs(sum-1)>0.001,'fixture must not be exact to the old tolerance');
+  assert.equal(validateResponse(p,c,config.jevModel).actionId,c.map(x=>x.id).sort()[0]);});
+test('genuinely inconsistent distribution is still rejected',()=>{const p=roundedPayload();const ids=Object.keys(p.answers.next_action.probabilities);
+  for(const id of ids.slice(1))p.answers.next_action.probabilities[id]=.1;
+  assert.throws(()=>validateResponse(p,c,config.jevModel),/invalid_probability_sum/);});

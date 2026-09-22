@@ -4,6 +4,8 @@ import { digits,candidateMasks,label,canonical,invariant } from '../shared/sudok
 import { heuristicChoice } from '../shared/sudoku-ai.js';
 import { hash } from './security.js';
 const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+// Smallest increment the provider reports probabilities on.
+export const PROBABILITY_GRAIN=0.01;
 export function encodeJevState(board,givens,candidates) {
   const rows=a=>Array.from({length:9},(_,i)=>a.slice(i*9,i*9+9).join(''));
   const masks=candidateMasks(board.values,board.eliminated);
@@ -19,7 +21,10 @@ export function validateResponse(body,candidates,model) {
   invariant(canonical(ids)===canonical(keys),'candidate_set_mismatch');
   invariant(Number.isFinite(a.confidence)&&a.confidence>=0&&a.confidence<=1,'invalid_confidence');
   invariant(keys.every(k=>Number.isFinite(a.probabilities[k])&&a.probabilities[k]>=0&&a.probabilities[k]<=1),'invalid_probability');
-  invariant(Math.abs(Object.values(a.probabilities).reduce((s,p)=>s+p,0)-1)<=0.001,'invalid_probability_sum');
+  // Each probability is reported on the grain, so the sum can drift by half a grain per
+  // bucket. This is the worst case of that rounding, not slack for arbitrary drift.
+  const sumTolerance=keys.length*(PROBABILITY_GRAIN/2);
+  invariant(Math.abs(Object.values(a.probabilities).reduce((s,p)=>s+p,0)-1)<=sumTolerance,'invalid_probability_sum');
   const max=Math.max(...Object.values(a.probabilities));
   invariant(ids.includes(a.choice)&&Math.abs(a.probabilities[a.choice]-max)<1e-9,'invalid_choice');
   const chosen=ids.filter(id=>Math.abs(a.probabilities[id]-max)<1e-9)[0];
