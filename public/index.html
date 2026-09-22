@@ -32,7 +32,9 @@
     <div id="notice" class="notice" role="status" hidden></div>
     <section id="view-play" class="view">
       <div class="intro jv-hero"><div><div class="eyebrow">SAME PUZZLE. SEPARATE BOARDS.</div><h1>You versus <span>JEV.</span></h1><p>Find the pattern. Fill the grid. Finish first.</p></div><div class="session-chip"><span class="chip-label">MODE</span><span id="eligibility-label">Practice</span></div></div>
-      <section class="setup" aria-label="Game setup"><p class="setup-summary">Opponent difficulty and play mode live in the <strong>Menu</strong>.</p>
+      <section class="setup" aria-label="Game setup">
+        <div class="difficulty-control"><span class="field-label" id="difficulty-label">OPPONENT DIFFICULTY</span><div class="segmented" role="group" aria-labelledby="difficulty-label"><button data-difficulty="easy">Easy</button><button data-difficulty="normal" class="selected" aria-pressed="true">Normal</button><button data-difficulty="hard">Hard</button><button data-difficulty="jev">JEV</button></div></div>
+        <label class="mode-control"><span class="field-label">PLAY MODE</span><select id="mode"><option value="practice">Practice · unlimited replays</option><option value="ranked">Daily ranked · one attempt</option></select></label>
         <button id="new-game" class="primary">Start new duel <span aria-hidden="true">↗</span></button>
         <button id="rules-button" class="icon-button" aria-label="Game rules">?</button>
       </section>
@@ -62,13 +64,12 @@
     <footer><span>JEV ARCADE <span class="muted">/</span> SUDOKU DUEL</span><span>Independent boards · Validated actions · Inspectable decisions</span><span class="muted">v1.0.0</span></footer>
   </main>
   <div class="jv-scrim" id="jv-scrim"></div>
-  <div class="jv-secondary jv-sheet" id="jv-sheet" aria-label="Menu">
-    <nav class="jv-nav" aria-label="Main navigation"><button class="nav-tab jv-sheet-item active" data-view="play">Play</button><button class="nav-tab jv-sheet-item" data-view="analytics">Analytics</button><button class="nav-tab jv-sheet-item" data-view="leaderboards">Leaderboards</button><button class="nav-tab jv-sheet-item" data-view="profile">My stats</button></nav>
-    <div class="jv-sheet-label sheet-only">Game setup</div>
-    <div class="difficulty-control"><span class="field-label" id="difficulty-label">OPPONENT DIFFICULTY</span><div class="segmented" role="group" aria-labelledby="difficulty-label"><button data-difficulty="easy">Easy</button><button data-difficulty="normal" class="selected" aria-pressed="true">Normal</button><button data-difficulty="hard">Hard</button><button data-difficulty="jev">JEV</button></div></div>
-    <label class="mode-control"><span class="field-label">PLAY MODE</span><select id="mode"><option value="practice">Practice · unlimited replays</option><option value="ranked">Daily ranked · one attempt</option></select></label>
-    <div class="jv-sheet-label sheet-only">Account</div>
-    <div class="identity"><span id="identity-label">Guest session</span><a class="button small" id="login" href="/api/auth/discord">Sign in with Discord</a><button id="logout" class="small" hidden>Sign out</button></div>
+  <div class="jv-sheet" id="jv-sheet" role="dialog" aria-modal="true" aria-label="Menu">
+    <div id="jv-controls">
+      <nav class="jv-nav" aria-label="Main navigation"><button class="nav-tab jv-sheet-item active" data-view="play">Play</button><button class="nav-tab jv-sheet-item" data-view="analytics">Analytics</button><button class="nav-tab jv-sheet-item" data-view="leaderboards">Leaderboards</button><button class="nav-tab jv-sheet-item" data-view="profile">My stats</button></nav>
+      <div class="jv-sheet-label">Account</div>
+      <div class="identity"><span id="identity-label">Guest session</span><a class="button small" id="login" href="/api/auth/discord">Sign in with Discord</a><button id="logout" class="small" hidden>Sign out</button></div>
+    </div>
   </div>
   </div>
   <dialog id="rules-dialog"><div class="dialog-heading"><h2>How the duel works</h2><button id="close-rules" aria-label="Close rules">×</button></div><p>Complete each row, column, and 3 × 3 box with digits 1–9. You and the opponent receive the same starting clues on separate boards.</p><h3>Controls</h3><p>Click a cell or use the arrow keys. Enter digits 1–9. Press N for pencil marks, Delete to erase, and Control/Command + Z to undo. Notes are never checked against the solution.</p><h3>Race and scoring</h3><p>The first correct completion wins. Finishes in the same elapsed one-second bucket tie. If JEV finishes first, keep solving for your completion time. Games expire after 60 minutes.</p><h3>Opponent difficulty</h3><p>Easy uses naked singles. Normal adds hidden singles and locked candidates. Hard adds pairs and X-Wing. JEV adds triples, bounded previews, and explicit backtracking. A profile can become stuck. Ranked actions have an eight-second minimum cadence.</p><h3>Ranked integrity</h3><p>Daily ranked requires Discord and live JEV configuration. One official attempt per user, difficulty, and UTC day. JEV answer digits and detailed deductions stay concealed until your attempt ends. Revealing answers or a service fallback makes the attempt practice.</p><p>Server verification proves valid recorded play, not the absence of external solving assistance.</p><h3>Without credentials</h3><p>The game runs against an explicitly labeled local heuristic. It is not presented as live JEV, and cannot create official scores.</p></dialog>

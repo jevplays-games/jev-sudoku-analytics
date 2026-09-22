@@ -74,10 +74,14 @@ p{margin:0}
 }
 @media(max-width:600px){.jv-main{padding:var(--s3) var(--s3) calc(var(--s5) + var(--sa-b));gap:var(--s4)}}
 
-/* Board-first on mobile: the hero drops below the board under 600px.
+/* Board-first: the hero drops below the board. Triggered by narrow width OR
+   short height -- a 740x420 landscape phone and a laptop at 1440x800 are both
+   wide but short, and there the hero pushed the board below the fold too.
    Games mark their board container .jv-first and the hero .jv-hero. */
-@media(max-width:600px){
+@media(max-width:600px),(max-height:950px){
   .jv-main>.jv-first{order:-1}
+}
+@media(max-width:600px){
   .jv-hero h1{font-size:var(--fs-xl)}
 }
 
@@ -126,8 +130,21 @@ p{margin:0}
 .jv-dot{width:7px;height:7px;border-radius:50%;background:var(--muted);flex:none}
 .jv-dot.is-live{background:var(--ok)} .jv-dot.is-off{background:var(--danger)}
 
-/* Secondary controls: a sheet on mobile, inline from 900px. */
-.jv-secondary{display:none}
+/* Secondary controls: a sheet on mobile, an inline header row from 900px.
+   #jv-controls is authored inside #jv-sheet and physically MOVED into the
+   header by brand.js above 900px. It is a move, not a clone, so ids stay
+   unique and every existing [data-page]/[data-view] binding survives.
+
+   Why a DOM move rather than CSS: .jv-header has backdrop-filter, which makes
+   it the containing block for any fixed-position descendant. So the sheet
+   cannot be both a fixed bottom sheet on mobile and a child of the header on
+   desktop. Nine repos each invented a workaround for this (three position:fixed
+   variants with guessed header reserves, two that rebuild the header's blur and
+   border on a second element, one display:contents, two .jv-app grids); all of
+   them either guess an offset or create a seam that has to match by eye.
+   Moving the node makes it a static flex child, and the problem disappears. */
+#jv-controls{display:flex;flex-direction:column;gap:var(--s2);width:100%}
+#jv-controls .jv-sheet-item{width:100%}
 .jv-sheet{
   position:fixed;inset:auto 0 0 0;z-index:60;
   transform:translateY(100%);transition:transform .22s ease,visibility .22s;
@@ -187,8 +204,17 @@ p{margin:0}
 @media(min-width:900px){
   .jv-header{height:calc(64px + var(--sa-t))}
   .jv-menu-btn{display:none}
-  .jv-secondary{display:flex;align-items:center;gap:var(--s2);flex:none}
-  .jv-sheet,.jv-scrim{display:none!important}
+  /* The sheet is empty up here (brand.js moved its contents into the header),
+     so it needs no !important fight -- just stay out of the way. */
+  .jv-sheet,.jv-scrim{display:none}
+  /* Same node, now a static flex child of the header: one inline row. */
+  #jv-controls{flex-direction:row;align-items:center;gap:var(--s2);width:auto;flex:none}
+  #jv-controls .jv-sheet-item{width:auto;min-height:36px;padding:0 var(--s3);font-size:var(--fs-xs);white-space:nowrap}
+  #jv-controls .jv-sheet-label{display:none}
+  /* A long tab strip scrolls rather than wrapping the header onto two rows
+     (mastermind carries five tabs plus brand, title and status chip). */
+  #jv-controls{max-width:min(60vw,44rem);overflow-x:auto;scrollbar-width:none}
+  #jv-controls::-webkit-scrollbar{display:none}
   .jv-main{padding:var(--s5) var(--s5) calc(var(--s7) + var(--sa-b))}
 }
 

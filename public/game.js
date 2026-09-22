@@ -188,8 +188,4 @@ window.addEventListener('online',async()=>{if(local){notice('Connection restored
 document.addEventListener('visibilitychange',()=>{if(document.hidden){hiddenAt=performance.now();flushTelemetry();}else if(hiddenAt!==null){record('visibility',{hiddenMs:Math.min(3600000,performance.now()-hiddenAt)});hiddenAt=null;}});
 try{new PerformanceObserver(list=>{for(const e of list.getEntries())record('long_task',{durationMs:Math.min(120000,e.duration)});}).observe({type:'longtask',buffered:true});}catch{/* Unsupported browsers do not synthesize observations. */}
 setInterval(()=>{if(!replayMode)$('timer').textContent=time(elapsed());},250);setInterval(flushTelemetry,5000);
-// The overflow sheet is only a modal dialog below 900px; inline in the header above it.
-const sheetMq=matchMedia('(max-width:899.98px)'),sheetEl=$('jv-sheet');
-function syncSheetRole(){if(!sheetEl)return;if(sheetMq.matches){sheetEl.setAttribute('role','dialog');sheetEl.setAttribute('aria-modal','true');}else{sheetEl.removeAttribute('role');sheetEl.removeAttribute('aria-modal');}}
-sheetMq.addEventListener('change',syncSheetRole);syncSheetRole();
 boot();

@@ -60,6 +60,7 @@ def mount_test_page(page, base: str, force_bridge: bool = False) -> None:
     html = re.sub(r'<script[^>]*>.*?</script>', '', html, flags=re.S)
     html = re.sub(r'<link[^>]+rel="stylesheet"[^>]*>', '', html)
     page.set_content(html)
+    page.add_style_tag(content=(ROOT/'public/brand/brand.css').read_text())
     page.add_style_tag(content=(ROOT/'public/game.css').read_text())
     page.evaluate(r"""saved => {
       const local = new Map(Object.entries(saved)); window.__testLocalStorage = local;
@@ -81,6 +82,7 @@ def mount_test_page(page, base: str, force_bridge: bool = False) -> None:
     sources = {}
     for file in (ROOT/'shared').glob('*.js'): sources['/shared/'+file.name]=file.read_text()
     for name in ['game.js','analytics-ui.js']: sources['/'+name]=(ROOT/'public'/name).read_text()
+    sources['/brand/brand.js']=(ROOT/'public/brand/brand.js').read_text()
     page.evaluate(r"""async sources => {
       const urls={}; const build=name=>{if(urls[name])return urls[name];let text=sources[name];
         const deps=[...text.matchAll(/(?:from\s*|import\(\s*)['"]([^'"]+)['"]/g)].map(m=>m[1]);
@@ -90,7 +92,7 @@ def mount_test_page(page, base: str, force_bridge: bool = False) -> None:
           const url=build(absolute);text=text.split("'"+dep+"'").join("'"+url+"'").split('"'+dep+'"').join('"'+url+'"');
         }
         return urls[name]=URL.createObjectURL(new Blob([text],{type:'text/javascript'}));
-      };const main=build('/game.js');window.__testModules=urls;await import(main);
+      };const brand=build('/brand/brand.js');const main=build('/game.js');window.__testModules=urls;await import(brand);await import(main);
     }""", sources)
 
 def run() -> None:

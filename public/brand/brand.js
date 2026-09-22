@@ -51,8 +51,36 @@ document.addEventListener('keydown', (event) => {
   else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
 });
 
-/* The sheet only exists below 900px; if the viewport grows past it while open,
-   its contents are already visible inline, so drop the overlay. */
-matchMedia('(min-width:900px)').addEventListener('change', (event) => {
-  if (event.matches) closeSheet();
-});
+/* ---- Desktop relocation -------------------------------------------------
+   #jv-controls holds the nav tabs and account controls. It is authored inside
+   #jv-sheet; above 900px it MOVES into the header, before the menu button.
+
+   A move, not a clone: ids stay unique and listeners stay attached, because
+   they are bound to the nodes rather than to their position in the tree.
+
+   Why JS: .jv-header has backdrop-filter, so it is the containing block for
+   any fixed-position descendant, and the sheet must be fixed on mobile. No CSS
+   property can relocate a child of a sibling into the header. Moving the node
+   makes it a static flex child, so nothing is fixed and nothing needs a
+   hand-guessed offset. */
+const controls = document.getElementById('jv-controls');
+const header = document.querySelector('.jv-header');
+const wide = matchMedia('(min-width:900px)');
+
+function placeControls() {
+  if (!controls || !header || !sheet) return;
+  if (wide.matches) {
+    if (controls.parentElement !== header) header.insertBefore(controls, button);
+    /* Not a dialog when its contents render inline in the header. */
+    sheet.removeAttribute('role');
+    sheet.removeAttribute('aria-modal');
+    closeSheet();
+  } else {
+    if (controls.parentElement !== sheet) sheet.appendChild(controls);
+    sheet.setAttribute('role', 'dialog');
+    sheet.setAttribute('aria-modal', 'true');
+  }
+}
+
+wide.addEventListener('change', placeControls);
+placeControls();
