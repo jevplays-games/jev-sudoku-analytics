@@ -1,3 +1,1 @@
-(node:1913) ExperimentalWarning: SQLite is an experimental feature and might change at any time
-(Use `node --trace-warnings ...` to show where the warning was created)
-{"event":"server_started","origin":"http://127.0.0.1:52395","bind":"127.0.0.1","port":52395,"opponent":"local_heuristic","discordConfigured":false}
+{"event":"server_started","origin":"http://127.0.0.1:50469","bind":"127.0.0.1","port":50469,"opponent":"local_heuristic","discordConfigured":false}

@@ -109,18 +109,25 @@ p{margin:0}
 .jv-icon-btn svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
 .jv-icon-btn[aria-expanded=true]{background:var(--raised);color:var(--text)}
 
-.jv-brand{display:flex;align-items:center;gap:var(--s2);min-width:0;flex:1;color:var(--text)}
+/* flex:1 1 auto, not flex:1. With a 0 basis the brand absorbs all free space,
+   the header is never over-full, so no sibling ever shrinks and the title alone
+   eats every shortfall -- measured at 56px against 91px needed. An auto basis
+   lets shrink actually distribute. */
+.jv-brand{display:flex;align-items:center;gap:var(--s2);min-width:0;flex:1 1 auto;color:var(--text)}
 .jv-mark{flex:none;width:28px;height:28px;border-radius:9px;display:block}
 .jv-wordmark{display:none;font-size:var(--fs-xs);letter-spacing:var(--track-caps);color:var(--muted);font-weight:700;white-space:nowrap}
 .jv-title{
-  min-width:0;font-size:var(--fs-md);font-weight:650;letter-spacing:-.01em;
+  /* A floor, so the title can ellipsise but never collapse to a single letter. */
+  min-width:3.5rem;font-size:var(--fs-md);font-weight:650;letter-spacing:-.01em;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
 .jv-sep{display:none;width:1px;height:16px;background:var(--line);flex:none}
 
 /* The one status slot. Games put score, clock, turn or count here. */
 .jv-status{
-  flex:none;max-width:40vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  /* Shrinkable, so the chip gives up space before the game title does.
+     Measured: at 900px with five tabs the title was being crushed to 27px. */
+  flex:0 1 auto;min-width:0;max-width:40vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
   display:flex;align-items:center;gap:var(--s2);
   padding:var(--s1) var(--s3);min-height:30px;
   font-size:var(--fs-xs);font-weight:600;letter-spacing:.02em;
@@ -143,8 +150,12 @@ p{margin:0}
    border on a second element, one display:contents, two .jv-app grids); all of
    them either guess an offset or create a seam that has to match by eye.
    Moving the node makes it a static flex child, and the problem disappears. */
-#jv-controls{display:flex;flex-direction:column;gap:var(--s2);width:100%}
+#jv-controls{display:flex;flex-direction:column;gap:var(--s2);width:100%;min-width:0}
 #jv-controls .jv-sheet-item{width:100%}
+/* Nav tabs keep a real <nav> landmark. Flattening it into #jv-controls lost the
+   landmark and its label in the four tabbed games, so the wrapper stays and is
+   laid out instead of being removed. */
+#jv-controls .jv-nav{display:flex;flex-direction:column;gap:var(--s2);width:100%;min-width:0}
 .jv-sheet{
   position:fixed;inset:auto 0 0 0;z-index:60;
   transform:translateY(100%);transition:transform .22s ease,visibility .22s;
@@ -201,6 +212,18 @@ p{margin:0}
   .jv-wordmark,.jv-sep{display:block}
   .jv-status{max-width:none}
 }
+/* 900-1099 is the tight zone: the controls have just moved into the header but
+   the viewport is still narrow. The "JEV ARCADE" wordmark is redundant there --
+   the mark already carries the brand -- and dropping it frees ~90px, which is
+   what keeps BOTH the game title and the status chip whole.
+   Measured need at 900 (mastermind, the worst case): controls 450 (capped) +
+   status 219 + brand-without-wordmark 127 + gaps 24 + padding 32 = 852 of 900.
+   The alternative -- capping the status chip -- was rejected: it would ellipsise
+   "LOCAL OPPONENT / NOT JEV" to "LOCAL OPPONENT /...", hiding the disclaimer.
+   Provenance labelling must never be truncated into something misleading. */
+@media(min-width:900px) and (max-width:1099px){
+  .jv-wordmark,.jv-sep{display:none}
+}
 @media(min-width:900px){
   .jv-header{height:calc(64px + var(--sa-t))}
   .jv-menu-btn{display:none}
@@ -211,9 +234,15 @@ p{margin:0}
   #jv-controls{flex-direction:row;align-items:center;gap:var(--s2);width:auto;flex:none}
   #jv-controls .jv-sheet-item{width:auto;min-height:36px;padding:0 var(--s3);font-size:var(--fs-xs);white-space:nowrap}
   #jv-controls .jv-sheet-label{display:none}
+  #jv-controls .jv-nav{flex-direction:row;width:auto;gap:var(--s1)}
   /* A long tab strip scrolls rather than wrapping the header onto two rows
-     (mastermind carries five tabs plus brand, title and status chip). */
-  #jv-controls{max-width:min(60vw,44rem);overflow-x:auto;scrollbar-width:none}
+     (mastermind carries five tabs plus brand, title and status chip).
+     Cap measured against mastermind, the worst case: its controls need 730px
+     natural width. 60vw was too greedy -- at 900px it claimed 540px and crushed
+     the title to 27px. 50vw leaves the title whole across 900-1100, and 46rem
+     (736px) clears the 730px need outright on wide screens, so the strip stops
+     scrolling entirely once there is room for it. */
+  #jv-controls{max-width:min(50vw,46rem);overflow-x:auto;scrollbar-width:none}
   #jv-controls::-webkit-scrollbar{display:none}
   .jv-main{padding:var(--s5) var(--s5) calc(var(--s7) + var(--sa-b))}
 }

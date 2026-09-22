@@ -14,7 +14,7 @@
     "No uncaught browser JavaScript errors"
   ],
   "externalServices": "No real Discord or JEV calls. Browser used local heuristic.",
-  "browserTransport": "Localhost Python HTTP bridge; EventSource simulated by polling; managed browser blocked URL navigation",
+  "browserTransport": "Native browser HTTP and SSE",
   "screenshots": [
     "desktop-game.png",
     "desktop-analytics.png",
