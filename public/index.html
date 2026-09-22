@@ -1,29 +1,44 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#0e1017">
   <meta name="description" content="Race a structured JEV opponent on independent Sudoku boards. Inspect every decision and your solving analytics.">
   <title>Sudoku Duel · JEV Arcade</title>
-  <link rel="stylesheet" href="/game.css"><script type="module" src="/game.js"></script>
+  <link rel="preload" href="/brand/inter-var.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="icon" type="image/svg+xml" href="/brand/icon.svg">
+  <link rel="apple-touch-icon" href="/brand/icon.svg">
+  <link rel="stylesheet" href="/brand/brand.css">
+  <link rel="stylesheet" href="/game.css">
+  <script type="module" src="/brand/brand.js"></script><script type="module" src="/game.js"></script>
 </head>
 <body>
-  <a class="skip" href="#human-board">Skip to your board</a>
-  <header class="topbar"><div class="brand"><span class="brand-mark" aria-hidden="true">J</span><span>JEV <strong>ARCADE</strong></span><span class="brand-divider"></span><span class="product-label">SUDOKU DUEL</span></div>
-    <nav aria-label="Main navigation"><button class="nav-tab active" data-view="play">Play</button><button class="nav-tab" data-view="analytics">Analytics</button><button class="nav-tab" data-view="leaderboards">Leaderboards</button><button class="nav-tab" data-view="profile">My stats</button></nav>
-    <div class="identity"><span id="identity-label">Guest session</span><a class="button small" id="login" href="/api/auth/discord">Sign in with Discord</a><button id="logout" class="small" hidden>Sign out</button></div>
+  <a class="jv-skip" href="#human-board">Skip to game</a>
+  <div class="jv-app">
+  <header class="jv-header">
+    <a class="jv-brand" href="/" aria-label="JEV Arcade home">
+      <img class="jv-mark" src="/brand/mark.svg" alt="" width="28" height="28">
+      <span class="jv-wordmark">JEV ARCADE</span>
+      <span class="jv-sep" aria-hidden="true"></span>
+      <span class="jv-title">Sudoku Duel</span>
+    </a>
+    <span class="jv-status"><span class="jv-dot status-dot" id="connection-dot"></span><span id="connection-label">Connecting</span></span>
+    <button class="jv-icon-btn jv-menu-btn" id="jv-menu" type="button" aria-expanded="false" aria-controls="jv-sheet" aria-label="Menu">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+    </button>
   </header>
-  <main>
+  <main class="jv-main" id="main">
     <div id="notice" class="notice" role="status" hidden></div>
     <section id="view-play" class="view">
-      <div class="intro"><div><div class="eyebrow">SAME PUZZLE. SEPARATE BOARDS.</div><h1>You versus <span>JEV.</span></h1><p>Find the pattern. Fill the grid. Finish first.</p></div><div class="session-chip"><span class="status-dot" id="connection-dot"></span><span id="connection-label">Connecting</span><span class="chip-divider">/</span><span id="eligibility-label">Practice</span></div></div>
-      <section class="setup" aria-label="Game setup"><div class="difficulty-control"><span class="field-label" id="difficulty-label">OPPONENT DIFFICULTY</span><div class="segmented" role="group" aria-labelledby="difficulty-label"><button data-difficulty="easy">Easy</button><button data-difficulty="normal" class="selected" aria-pressed="true">Normal</button><button data-difficulty="hard">Hard</button><button data-difficulty="jev">JEV</button></div></div>
-        <label class="mode-control"><span class="field-label">PLAY MODE</span><select id="mode"><option value="practice">Practice · unlimited replays</option value="ranked">Daily ranked · one attempt</option></select></label>
+      <div class="intro jv-hero"><div><div class="eyebrow">SAME PUZZLE. SEPARATE BOARDS.</div><h1>You versus <span>JEV.</span></h1><p>Find the pattern. Fill the grid. Finish first.</p></div><div class="session-chip"><span class="chip-label">MODE</span><span id="eligibility-label">Practice</span></div></div>
+      <section class="setup" aria-label="Game setup"><p class="setup-summary">Opponent difficulty and play mode live in the <strong>Menu</strong>.</p>
         <button id="new-game" class="primary">Start new duel <span aria-hidden="true">↗</span></button>
         <button id="rules-button" class="icon-button" aria-label="Game rules">?</button>
       </section>
       <div class="matchbar"><div><span class="live-tag" id="phase-label">READY TO PLAY</span><span id="puzzle-caption">Classic 9 × 9 · one correct solution</span></div><div class="clock" aria-label="Elapsed time"><span class="clock-icon" aria-hidden="true">◷</span><span id="timer">00:00</span></div></div>
       <div id="result-banner" class="result-banner" aria-live="polite" hidden></div>
-      <div class="boards">
+      <div class="boards jv-first">
         <section class="board-card human-card" aria-label="Your Sudoku"><div class="board-heading"><div class="player-name"><span class="player-avatar">Y</span><div><h2>You</h2><p>Your grid. Your deductions.</p></div></div><span class="player-badge">HUMAN</span></div>
           <div class="progress-label"><span id="human-progress">0 / 0 cells</span><span id="human-percent">0%</span></div><progress id="human-progressbar" value="0" max="100" aria-label="Your completion"></progress>
           <div id="human-board" class="sudoku-board" role="grid" aria-label="Your Sudoku board. Arrow keys navigate; 1 through 9 enter digits; N toggles notes." aria-rowcount="9" aria-colcount="9"></div>
@@ -46,6 +61,16 @@
     <section id="view-profile" class="view" hidden><div class="section-heading"><div><div class="eyebrow">YOUR SOLVING HISTORY</div><h1>My stats & privacy</h1><p>Guest history belongs to this browser session. Discord identifies ranked players.</p></div></div><div id="profile-content"></div><section class="panel"><h2>Optional interaction analytics</h2><label class="consent"><input type="checkbox" id="telemetry-consent"> Share pencil-mark counts, cell-focus durations, input methods, visibility, and performance observations.</label><p>Off by default. No advertising SDK, fingerprinting, raw keystroke stream, email collection, or external analytics service. Core server game records remain necessary for replay and scores. Turning this off also deletes your stored optional events. Account deletion removes stored games and results; a keyed, non-public daily-attempt marker remains until the current UTC day ends to prevent resetting ranked attempts.</p><div class="export-actions"><button id="export-account">Export my data</button><button id="delete-account" class="text-danger">Delete my data</button></div></section><section class="panel"><h2>Replay import</h2><p>Inspect a downloaded replay locally. Imported files never submit official scores.</p><label class="button">Choose replay JSON <input id="import-replay" type="file" accept="application/json,.json"></label></section><section id="operator-section" class="panel" hidden><h2>Operator analytics</h2><p>Authenticated, restricted aggregate reporting. No live puzzle answers.</p><button id="operator-load">Load 30-day report</button><div id="operator-content"></div></section></section>
     <footer><span>JEV ARCADE <span class="muted">/</span> SUDOKU DUEL</span><span>Independent boards · Validated actions · Inspectable decisions</span><span class="muted">v1.0.0</span></footer>
   </main>
+  <div class="jv-scrim" id="jv-scrim"></div>
+  <div class="jv-secondary jv-sheet" id="jv-sheet" aria-label="Menu">
+    <nav class="jv-nav" aria-label="Main navigation"><button class="nav-tab jv-sheet-item active" data-view="play">Play</button><button class="nav-tab jv-sheet-item" data-view="analytics">Analytics</button><button class="nav-tab jv-sheet-item" data-view="leaderboards">Leaderboards</button><button class="nav-tab jv-sheet-item" data-view="profile">My stats</button></nav>
+    <div class="jv-sheet-label sheet-only">Game setup</div>
+    <div class="difficulty-control"><span class="field-label" id="difficulty-label">OPPONENT DIFFICULTY</span><div class="segmented" role="group" aria-labelledby="difficulty-label"><button data-difficulty="easy">Easy</button><button data-difficulty="normal" class="selected" aria-pressed="true">Normal</button><button data-difficulty="hard">Hard</button><button data-difficulty="jev">JEV</button></div></div>
+    <label class="mode-control"><span class="field-label">PLAY MODE</span><select id="mode"><option value="practice">Practice · unlimited replays</option><option value="ranked">Daily ranked · one attempt</option></select></label>
+    <div class="jv-sheet-label sheet-only">Account</div>
+    <div class="identity"><span id="identity-label">Guest session</span><a class="button small" id="login" href="/api/auth/discord">Sign in with Discord</a><button id="logout" class="small" hidden>Sign out</button></div>
+  </div>
+  </div>
   <dialog id="rules-dialog"><div class="dialog-heading"><h2>How the duel works</h2><button id="close-rules" aria-label="Close rules">×</button></div><p>Complete each row, column, and 3 × 3 box with digits 1–9. You and the opponent receive the same starting clues on separate boards.</p><h3>Controls</h3><p>Click a cell or use the arrow keys. Enter digits 1–9. Press N for pencil marks, Delete to erase, and Control/Command + Z to undo. Notes are never checked against the solution.</p><h3>Race and scoring</h3><p>The first correct completion wins. Finishes in the same elapsed one-second bucket tie. If JEV finishes first, keep solving for your completion time. Games expire after 60 minutes.</p><h3>Opponent difficulty</h3><p>Easy uses naked singles. Normal adds hidden singles and locked candidates. Hard adds pairs and X-Wing. JEV adds triples, bounded previews, and explicit backtracking. A profile can become stuck. Ranked actions have an eight-second minimum cadence.</p><h3>Ranked integrity</h3><p>Daily ranked requires Discord and live JEV configuration. One official attempt per user, difficulty, and UTC day. JEV answer digits and detailed deductions stay concealed until your attempt ends. Revealing answers or a service fallback makes the attempt practice.</p><p>Server verification proves valid recorded play, not the absence of external solving assistance.</p><h3>Without credentials</h3><p>The game runs against an explicitly labeled local heuristic. It is not presented as live JEV, and cannot create official scores.</p></dialog>
   <div id="live-announcement" class="sr-only" aria-live="polite" aria-atomic="true"></div>
 </body>

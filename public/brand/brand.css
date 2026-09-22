@@ -1,0 +1,197 @@
+/* JEV Arcade shared brand system. Loaded before game.css in every arcade repo.
+   Owns: font, color tokens, type scale, spacing, the .jv-* app shell and header.
+   Games own their board and set --accent; they must not redefine the tokens above it. */
+
+@font-face{font-family:Inter;src:url(/brand/inter-var.woff2)format("woff2");font-weight:100 900;font-display:swap;font-style:normal}
+
+:root{
+  color-scheme:dark;
+
+  /* Shell. Identical in all nine games. */
+  --bg:#0e1017; --surface:#171a24; --raised:#1e2230; --sunken:#0a0c12;
+  --line:#2c3243; --line-soft:#232838;
+  --text:#eef0f7; --muted:#a3aabd; --subtle:#78809a;
+
+  /* Per-game identity. A game overrides --accent (and only --accent) in game.css. */
+  --accent:#a99bff; --accent-deep:#6f5fd6; --accent-ink:#0e1017;
+
+  /* Fixed semantics across all nine, replacing the seven old naming schemes. */
+  --human:#b5a1ff; --jev:#6fdcc8;
+  --ok:#8fe0b8; --warn:#edc389; --danger:#f79aa4;
+
+  /* Type */
+  --font:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Consolas,monospace;
+  --fs-xs:.75rem; --fs-sm:.875rem; --fs-md:1rem; --fs-lg:1.125rem;
+  --fs-xl:1.375rem; --fs-2xl:clamp(1.5rem,1.1rem + 2vw,2.25rem); --fs-3xl:clamp(1.875rem,1.2rem + 3.2vw,3rem);
+  --lh-tight:1.15; --lh:1.5;
+  --track-caps:.08em;
+
+  /* Spacing: 4px base */
+  --s1:.25rem; --s2:.5rem; --s3:.75rem; --s4:1rem; --s5:1.5rem; --s6:2rem; --s7:3rem; --s8:4rem;
+
+  --radius-sm:8px; --radius:12px; --radius-lg:16px; --radius-xl:20px; --radius-pill:999px;
+  --tap:44px;
+  --header-h:56px;
+
+  /* Safe areas, resolved once so games never call env() themselves. */
+  --sa-t:env(safe-area-inset-top,0px); --sa-r:env(safe-area-inset-right,0px);
+  --sa-b:env(safe-area-inset-bottom,0px); --sa-l:env(safe-area-inset-left,0px);
+
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.28);
+  --ring:0 0 0 2px var(--bg),0 0 0 4px var(--accent);
+}
+
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; font-family:var(--font); font-size:var(--fs-md); line-height:var(--lh);
+  color:var(--text); background:var(--bg); font-synthesis:none;
+  -webkit-font-smoothing:antialiased;
+  /* dvh with a vh fallback for browsers without dynamic viewport units. */
+  min-height:100vh; min-height:100dvh;
+  overflow-x:hidden;
+}
+h1,h2,h3,h4{margin:0;line-height:var(--lh-tight);font-weight:650;letter-spacing:-.015em}
+h1{font-size:var(--fs-2xl)} h2{font-size:var(--fs-xl)} h3{font-size:var(--fs-lg)} h4{font-size:var(--fs-md)}
+p{margin:0}
+:where(button,input,select,textarea){font:inherit;color:inherit}
+:where(a){color:var(--accent);text-decoration:none}
+:focus-visible{outline:none;box-shadow:var(--ring)}
+.jv-eyebrow{font-size:var(--fs-xs);letter-spacing:var(--track-caps);text-transform:uppercase;color:var(--muted);font-weight:600}
+.jv-num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+
+/* ---------- App shell ---------- */
+.jv-app{
+  display:flex;flex-direction:column;
+  min-height:100vh;min-height:100dvh;
+  padding-left:var(--sa-l);padding-right:var(--sa-r);
+}
+.jv-main{
+  flex:1;width:100%;max-width:1280px;margin:0 auto;
+  padding:var(--s4) var(--s4) calc(var(--s6) + var(--sa-b));
+  display:flex;flex-direction:column;gap:var(--s5);
+}
+@media(max-width:600px){.jv-main{padding:var(--s3) var(--s3) calc(var(--s5) + var(--sa-b));gap:var(--s4)}}
+
+/* Board-first on mobile: the hero drops below the board under 600px.
+   Games mark their board container .jv-first and the hero .jv-hero. */
+@media(max-width:600px){
+  .jv-main>.jv-first{order:-1}
+  .jv-hero h1{font-size:var(--fs-xl)}
+}
+
+.jv-skip{position:absolute;left:-9999px;top:0;z-index:100;padding:var(--s3) var(--s4);background:var(--raised);border-radius:0 0 var(--radius) 0}
+.jv-skip:focus{left:0}
+
+/* ---------- Header: one row, every game ---------- */
+.jv-header{
+  position:sticky;top:0;z-index:50;
+  display:flex;align-items:center;gap:var(--s2);
+  height:calc(var(--header-h) + var(--sa-t));
+  padding:var(--sa-t) var(--s3) 0;
+  background:color-mix(in srgb,var(--bg) 88%,transparent);
+  backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--line-soft);
+}
+@supports not (backdrop-filter:blur(1px)){.jv-header{background:var(--bg)}}
+
+.jv-icon-btn{
+  flex:none;display:grid;place-items:center;
+  width:var(--tap);height:var(--tap);
+  background:transparent;border:0;border-radius:var(--radius-sm);
+  color:var(--muted);cursor:pointer;
+}
+.jv-icon-btn svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.jv-icon-btn[aria-expanded=true]{background:var(--raised);color:var(--text)}
+
+.jv-brand{display:flex;align-items:center;gap:var(--s2);min-width:0;flex:1;color:var(--text)}
+.jv-mark{flex:none;width:28px;height:28px;border-radius:9px;display:block}
+.jv-wordmark{display:none;font-size:var(--fs-xs);letter-spacing:var(--track-caps);color:var(--muted);font-weight:700;white-space:nowrap}
+.jv-title{
+  min-width:0;font-size:var(--fs-md);font-weight:650;letter-spacing:-.01em;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.jv-sep{display:none;width:1px;height:16px;background:var(--line);flex:none}
+
+/* The one status slot. Games put score, clock, turn or count here. */
+.jv-status{
+  flex:none;max-width:40vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  display:flex;align-items:center;gap:var(--s2);
+  padding:var(--s1) var(--s3);min-height:30px;
+  font-size:var(--fs-xs);font-weight:600;letter-spacing:.02em;
+  background:var(--raised);border:1px solid var(--line);border-radius:var(--radius-pill);color:var(--muted);
+}
+.jv-status strong{color:var(--text);font-family:var(--mono);font-variant-numeric:tabular-nums}
+.jv-dot{width:7px;height:7px;border-radius:50%;background:var(--muted);flex:none}
+.jv-dot.is-live{background:var(--ok)} .jv-dot.is-off{background:var(--danger)}
+
+/* Secondary controls: a sheet on mobile, inline from 900px. */
+.jv-secondary{display:none}
+.jv-sheet{
+  position:fixed;inset:auto 0 0 0;z-index:60;
+  transform:translateY(100%);transition:transform .22s ease,visibility .22s;
+  visibility:hidden;
+  background:var(--surface);border-top:1px solid var(--line);
+  border-radius:var(--radius-xl) var(--radius-xl) 0 0;
+  padding:var(--s4) var(--s4) calc(var(--s4) + var(--sa-b));
+  display:flex;flex-direction:column;gap:var(--s2);
+  max-height:80dvh;overflow:auto;box-shadow:var(--shadow);
+}
+.jv-sheet.is-open{transform:translateY(0);visibility:visible}
+.jv-scrim{position:fixed;inset:0;z-index:55;background:rgba(6,8,13,.6);opacity:0;visibility:hidden;transition:opacity .22s ease,visibility .22s}
+.jv-scrim.is-open{opacity:1;visibility:visible}
+.jv-sheet-item{
+  display:flex;align-items:center;gap:var(--s3);width:100%;
+  min-height:var(--tap);padding:var(--s2) var(--s3);
+  background:transparent;border:0;border-radius:var(--radius);
+  color:var(--text);font-size:var(--fs-sm);text-align:left;cursor:pointer;
+}
+.jv-sheet-item[aria-current=page],.jv-sheet-item.is-active{background:var(--raised);color:var(--accent)}
+.jv-sheet-label{padding:var(--s2) var(--s3) 0;font-size:var(--fs-xs);letter-spacing:var(--track-caps);text-transform:uppercase;color:var(--subtle)}
+
+/* ---------- Controls ---------- */
+.jv-btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:var(--s2);
+  min-height:var(--tap);padding:0 var(--s4);
+  border-radius:var(--radius);border:1px solid var(--line);
+  background:var(--raised);color:var(--text);
+  font-size:var(--fs-sm);font-weight:600;cursor:pointer;
+  transition:background .15s ease,border-color .15s ease;
+}
+.jv-btn.is-primary{background:var(--accent);border-color:transparent;color:var(--accent-ink)}
+.jv-btn.is-quiet{background:transparent}
+.jv-btn:disabled{opacity:.45;cursor:not-allowed}
+.jv-btn.is-compact{min-height:36px;padding:0 var(--s3);font-size:var(--fs-xs)}
+@media(hover:hover){.jv-btn:hover:not(:disabled){border-color:var(--accent)}}
+/* Touch gets the same affordance on press, since hover never fires. */
+.jv-btn:active:not(:disabled){border-color:var(--accent)}
+
+.jv-panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);padding:var(--s4)}
+
+/* Board sizing helper: fits width AND height, never overflows, never a fixed px.
+   --fit-max: natural max width. --fit-reserve: vertical space the page needs
+   around the board. --fit-ratio: board width / height. */
+.jv-fit{
+  width:100%;
+  max-width:min(100%,var(--fit-max,560px),calc((100dvh - var(--header-h) - var(--fit-reserve,220px)) * var(--fit-ratio,1)));
+  margin-inline:auto;
+}
+
+/* ---------- Breakpoints: 600 / 900 / 1280, shared by all nine ---------- */
+@media(min-width:600px){
+  .jv-header{padding-inline:var(--s4);gap:var(--s3)}
+  .jv-wordmark,.jv-sep{display:block}
+  .jv-status{max-width:none}
+}
+@media(min-width:900px){
+  .jv-header{height:calc(64px + var(--sa-t))}
+  .jv-menu-btn{display:none}
+  .jv-secondary{display:flex;align-items:center;gap:var(--s2);flex:none}
+  .jv-sheet,.jv-scrim{display:none!important}
+  .jv-main{padding:var(--s5) var(--s5) calc(var(--s7) + var(--sa-b))}
+}
+
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}
+}

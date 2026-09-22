@@ -14,6 +14,9 @@ const staticFiles=new Map([
   ['/', ['public/index.html','text/html; charset=utf-8']],['/index.html',['public/index.html','text/html; charset=utf-8']],
   ['/game.css',['public/game.css','text/css; charset=utf-8']],['/game.js',['public/game.js','text/javascript; charset=utf-8']],
   ['/analytics-ui.js',['public/analytics-ui.js','text/javascript; charset=utf-8']],
+  ['/brand/brand.css',['public/brand/brand.css','text/css; charset=utf-8']],['/brand/brand.js',['public/brand/brand.js','text/javascript; charset=utf-8']],
+  ['/brand/icon.svg',['public/brand/icon.svg','image/svg+xml']],['/brand/mark.svg',['public/brand/mark.svg','image/svg+xml']],
+  ['/brand/inter-var.woff2',['public/brand/inter-var.woff2','font/woff2']],['/brand/OFL.txt',['public/brand/OFL.txt','text/plain; charset=utf-8']],
   ...['sudoku','sudoku-ai','match','replay','analytics'].map(n=>[`/shared/${n}.js`,[`shared/${n}.js`,'text/javascript; charset=utf-8']])
 ]);
 const normalizeRoute=path=>path.replace(/\/api\/matches\/[^/]+/,'/api/matches/:id');
