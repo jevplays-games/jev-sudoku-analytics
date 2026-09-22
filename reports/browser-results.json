@@ -1,0 +1,23 @@
+{
+  "suite": "Chromium end-to-end smoke",
+  "passed": 9,
+  "failed": 0,
+  "checks": [
+    "Initial load, 162 board cells, honest local-opponent label",
+    "Keyboard notes, digit entry, server acknowledgement and undo",
+    "Live analytics, progress chart, 81-cell heatmap and JSON download",
+    "Full puzzle solved through UI and replay-verified by server",
+    "Replay reconstruction, timeline scrubbing and return to live result",
+    "World empty state and unauthorized community scope handling",
+    "Reload recovers the completed server-owned match",
+    "390px mobile layout without horizontal overflow and rules dialog",
+    "No uncaught browser JavaScript errors"
+  ],
+  "externalServices": "No real Discord or JEV calls. Browser used local heuristic.",
+  "browserTransport": "Localhost Python HTTP bridge; EventSource simulated by polling; managed browser blocked URL navigation",
+  "screenshots": [
+    "desktop-game.png",
+    "desktop-analytics.png",
+    "mobile-game.png"
+  ]
+}

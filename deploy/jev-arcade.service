@@ -1,0 +1,24 @@
+[Unit]
+Description=JEV Sudoku Arcade
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=jev-arcade
+Group=jev-arcade
+WorkingDirectory=/opt/jev-sudoku
+EnvironmentFile=/etc/jev-sudoku.env
+ExecStart=/usr/bin/node /opt/jev-sudoku/server/server.js
+Restart=on-failure
+RestartSec=3
+TimeoutStopSec=3660
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/jev-sudoku
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

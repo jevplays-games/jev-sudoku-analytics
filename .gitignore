@@ -1,0 +1,12 @@
+.env
+.env.*
+!.env.example
+data/
+backups/
+node_modules/
+__pycache__/
+*.pyc
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+.DS_Store

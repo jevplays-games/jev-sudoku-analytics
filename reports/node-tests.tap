@@ -1,0 +1,376 @@
+TAP version 13
+# Subtest: exact gameplay metric accounting and empty-denominator behavior
+ok 1 - exact gameplay metric accounting and empty-denominator behavior
+  ---
+  duration_ms: 2.493942
+  type: 'test'
+  ...
+# Subtest: percentiles, standard deviation and entropy are reproducible
+ok 2 - percentiles, standard deviation and entropy are reproducible
+  ---
+  duration_ms: 0.31962
+  type: 'test'
+  ...
+# Subtest: client telemetry is separated from server evidence and never changes score
+ok 3 - client telemetry is separated from server evidence and never changes score
+  ---
+  duration_ms: 0.630336
+  type: 'test'
+  ...
+# Subtest: cost estimates require configured prices and complete reported token usage
+ok 4 - cost estimates require configured prices and complete reported token usage
+  ---
+  duration_ms: 1.091008
+  type: 'test'
+  ...
+# Subtest: redaction strips coordinates, digits, action IDs, probabilities and evidence
+ok 5 - redaction strips coordinates, digits, action IDs, probabilities and evidence
+  ---
+  duration_ms: 11.629163
+  type: 'test'
+  ...
+# Subtest: summary separates difficulties and records streaks
+ok 6 - summary separates difficulties and records streaks
+  ---
+  duration_ms: 0.570366
+  type: 'test'
+  ...
+# Subtest: telemetry schema rejects arbitrary text, keys, timestamps and forged event names
+ok 7 - telemetry schema rejects arbitrary text, keys, timestamps and forged event names
+  ---
+  duration_ms: 0.517086
+  type: 'test'
+  ...
+# Subtest: CSV safely escapes commas, quotes, newlines and spreadsheet formulas
+ok 8 - CSV safely escapes commas, quotes, newlines and spreadsheet formulas
+  ---
+  duration_ms: 0.727301
+  type: 'test'
+  ...
+# Subtest: voided attempts are not wins, losses, draws, or completion-rate denominator
+ok 9 - voided attempts are not wins, losses, draws, or completion-rate denominator
+  ---
+  duration_ms: 0.680792
+  type: 'test'
+  ...
+# (node:1828) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: HTTP security headers, static assets, and unauthenticated boundaries
+ok 10 - HTTP security headers, static assets, and unauthenticated boundaries
+  ---
+  duration_ms: 47.800859
+  type: 'test'
+  ...
+# Subtest: HTTP create/start/action/analytics and strict ownership
+ok 11 - HTTP create/start/action/analytics and strict ownership
+  ---
+  duration_ms: 69.202886
+  type: 'test'
+  ...
+# Subtest: telemetry requires consent, validates event allowlist, and can be purged
+ok 12 - telemetry requires consent, validates event allowlist, and can be purged
+  ---
+  duration_ms: 31.179022
+  type: 'test'
+  ...
+# Subtest: data export does not expose running ranked initial data or server keys
+ok 13 - data export does not expose running ranked initial data or server keys
+  ---
+  duration_ms: 14.55182
+  type: 'test'
+  ...
+# Subtest: native HTTP SSE sends authoritative state and closes cleanly
+ok 14 - native HTTP SSE sends authoritative state and closes cleanly
+  ---
+  duration_ms: 30.827374
+  type: 'test'
+  ...
+# Subtest: valid structured choice and state encoding excludes human information
+ok 15 - valid structured choice and state encoding excludes human information
+  ---
+  duration_ms: 1.84586
+  type: 'test'
+  ...
+# Subtest: probability distribution, confidence, model, IDs and usage are strict
+ok 16 - probability distribution, confidence, model, IDs and usage are strict
+  ---
+  duration_ms: 0.760111
+  type: 'test'
+  ...
+# Subtest: equal top probabilities use canonical action ID, not provider tie choice
+ok 17 - equal top probabilities use canonical action ID, not provider tie choice
+  ---
+  duration_ms: 0.281843
+  type: 'test'
+  ...
+# Subtest: adapter sends the documented shape, records latency and token usage
+ok 18 - adapter sends the documented shape, records latency and token usage
+  ---
+  duration_ms: 22.229201
+  type: 'test'
+  ...
+# Subtest: malformed output retries once then explicit heuristic fallback
+ok 19 - malformed output retries once then explicit heuristic fallback
+  ---
+  duration_ms: 106.680087
+  type: 'test'
+  ...
+# Subtest: timeout is bounded and produces explicit fallback
+ok 20 - timeout is bounded and produces explicit fallback
+  ---
+  duration_ms: 165.335785
+  type: 'test'
+  ...
+# Subtest: authentication failure and long Retry-After are not hammered
+ok 21 - authentication failure and long Retry-After are not hammered
+  ---
+  duration_ms: 3.017318
+  type: 'test'
+  ...
+# Subtest: missing credentials, forced steps, and concurrency caps are explicit
+ok 22 - missing credentials, forced steps, and concurrency caps are explicit
+  ---
+  duration_ms: 2.748244
+  type: 'test'
+  ...
+# Subtest: givens parsing and independent board arrays
+ok 23 - givens parsing and independent board arrays
+  ---
+  duration_ms: 1.434863
+  type: 'test'
+  ...
+# Subtest: 27-unit completion validation
+ok 24 - 27-unit completion validation
+  ---
+  duration_ms: 0.40664
+  type: 'test'
+  ...
+# Subtest: human set, replacement, clear and undo are deterministic
+ok 25 - human set, replacement, clear and undo are deterministic
+  ---
+  duration_ms: 0.403406
+  type: 'test'
+  ...
+# Subtest: locally legal wrong guesses are allowed without an answer key
+ok 26 - locally legal wrong guesses are allowed without an answer key
+  ---
+  duration_ms: 0.315183
+  type: 'test'
+  ...
+# Subtest: immutable givens, peer conflicts, cell/digit bounds and no-op edits
+ok 27 - immutable givens, peer conflicts, cell/digit bounds and no-op edits
+  ---
+  duration_ms: 0.355834
+  type: 'test'
+  ...
+# Subtest: candidate masks and contradictions
+ok 28 - candidate masks and contradictions
+  ---
+  duration_ms: 0.421552
+  type: 'test'
+  ...
+# Subtest: solution counting rejects ambiguous and impossible grids
+ok 29 - solution counting rejects ambiguous and impossible grids
+  ---
+  duration_ms: 7.855019
+  type: 'test'
+  ...
+# Subtest: seeded unique puzzle generation is repeatable
+ok 30 - seeded unique puzzle generation is repeatable
+  ---
+  duration_ms: 39.504988
+  type: 'test'
+  ...
+# Subtest: human-first race settles only after its second bucket
+ok 31 - human-first race settles only after its second bucket
+  ---
+  duration_ms: 0.750877
+  type: 'test'
+  ...
+# Subtest: same-bucket finishes draw and pacing is validated
+ok 32 - same-bucket finishes draw and pacing is validated
+  ---
+  duration_ms: 6.06361
+  type: 'test'
+  ...
+# Subtest: JEV-first does not end human attempt or reveal ranked answers
+ok 33 - JEV-first does not end human attempt or reveal ranked answers
+  ---
+  duration_ms: 0.948554
+  type: 'test'
+  ...
+# Subtest: forfeit, timeout, void and monotonic time checks
+ok 34 - forfeit, timeout, void and monotonic time checks
+  ---
+  duration_ms: 0.369104
+  type: 'test'
+  ...
+# Subtest: revealing answers is an irreversible eligibility transition
+ok 35 - revealing answers is an irreversible eligibility transition
+  ---
+  duration_ms: 0.650426
+  type: 'test'
+  ...
+# Subtest: replay validates sequence, outcome, version and final state
+ok 36 - replay validates sequence, outcome, version and final state
+  ---
+  duration_ms: 1.330216
+  type: 'test'
+  ...
+# Subtest: candidate caps and bounded preview budgets
+ok 37 - candidate caps and bounded preview budgets
+  ---
+  duration_ms: 69.173023
+  type: 'test'
+  ...
+# Subtest: all generated deduction effects preserve the independently computed solution
+ok 38 - all generated deduction effects preserve the independently computed solution
+  ---
+  duration_ms: 9727.841745
+  type: 'test'
+  ...
+# Subtest: invalid proof or invented effect is rejected
+ok 39 - invalid proof or invented effect is rejected
+  ---
+  duration_ms: 2.728475
+  type: 'test'
+  ...
+# Subtest: naked pair and triple detectors produce elementary eliminations
+ok 40 - naked pair and triple detectors produce elementary eliminations
+  ---
+  duration_ms: 7.744102
+  type: 'test'
+  ...
+# Subtest: hidden pair detector and X-Wing detector
+ok 41 - hidden pair detector and X-Wing detector
+  ---
+  duration_ms: 6.510441
+  type: 'test'
+  ...
+# Subtest: branch snapshot restoration excludes the failed assumption
+ok 42 - branch snapshot restoration excludes the failed assumption
+  ---
+  duration_ms: 6.599084
+  type: 'test'
+  ...
+# (node:1871) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: signed launch rejects modification, expiration and wrong audience
+ok 43 - signed launch rejects modification, expiration and wrong audience
+  ---
+  duration_ms: 2.439071
+  type: 'test'
+  ...
+# Subtest: Discord Ed25519 verification binds timestamp and raw request bytes
+ok 44 - Discord Ed25519 verification binds timestamp and raw request bytes
+  ---
+  duration_ms: 3.356367
+  type: 'test'
+  ...
+# Subtest: CSRF requires origin and session-bound token
+ok 45 - CSRF requires origin and session-bound token
+  ---
+  duration_ms: 0.417377
+  type: 'test'
+  ...
+# Subtest: rate limiter expires windows and bounds memory
+ok 46 - rate limiter expires windows and bounds memory
+  ---
+  duration_ms: 0.431597
+  type: 'test'
+  ...
+# Subtest: OAuth state, successful identity, rotated session and no token persistence
+ok 47 - OAuth state, successful identity, rotated session and no token persistence
+  ---
+  duration_ms: 24.248431
+  type: 'test'
+  ...
+# Subtest: wrong-session or expired OAuth state is rejected before network access
+ok 48 - wrong-session or expired OAuth state is rejected before network access
+  ---
+  duration_ms: 1.59557
+  type: 'test'
+  ...
+# Subtest: launch redemption is subject-bound, expiring and one-use
+ok 49 - launch redemption is subject-bound, expiring and one-use
+  ---
+  duration_ms: 1.461273
+  type: 'test'
+  ...
+# Subtest: signed Discord command returns user-bound fragment link and rejects replay
+ok 50 - signed Discord command returns user-bound fragment link and rejects replay
+  ---
+  duration_ms: 3.206222
+  type: 'test'
+  ...
+# (node:1882) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: start withholds initial clues until official start and verifies completed human replay
+ok 51 - start withholds initial clues until official start and verifies completed human replay
+  ---
+  duration_ms: 25.694742
+  type: 'test'
+  ...
+# Subtest: actions are owned, revision checked, idempotent and do not accept fabricated score fields
+ok 52 - actions are owned, revision checked, idempotent and do not accept fabricated score fields
+  ---
+  duration_ms: 5.061075
+  type: 'test'
+  ...
+# Subtest: scheduler applies independent opponent steps and does not rely on client polling
+ok 53 - scheduler applies independent opponent steps and does not rely on client polling
+  ---
+  duration_ms: 29.920373
+  type: 'test'
+  ...
+# Subtest: ranked analytics and public projection do not leak opponent answers
+ok 54 - ranked analytics and public projection do not leak opponent answers
+  ---
+  duration_ms: 6.850271
+  type: 'test'
+  ...
+# Subtest: provider failure downgrades before the heuristic move
+ok 55 - provider failure downgrades before the heuristic move
+  ---
+  duration_ms: 4.834405
+  type: 'test'
+  ...
+# Subtest: restart recovery voids active attempts and verifies their stored state
+ok 56 - restart recovery voids active attempts and verifies their stored state
+  ---
+  duration_ms: 3.460663
+  type: 'test'
+  ...
+# Subtest: official attempt reservation survives deletion as a short-lived keyed tombstone
+ok 57 - official attempt reservation survives deletion as a short-lived keyed tombstone
+  ---
+  duration_ms: 2.450237
+  type: 'test'
+  ...
+# Subtest: channel/server/world leaderboards, tied ranks and pagination
+ok 58 - channel/server/world leaderboards, tied ranks and pagination
+  ---
+  duration_ms: 4.159683
+  type: 'test'
+  ...
+# Subtest: operator reports make empty data and coverage explicit
+ok 59 - operator reports make empty data and coverage explicit
+  ---
+  duration_ms: 1.868734
+  type: 'test'
+  ...
+# Subtest: expired ready reservations do not permanently block starting another game
+ok 60 - expired ready reservations do not permanently block starting another game
+  ---
+  duration_ms: 15.320012
+  type: 'test'
+  ...
+1..60
+# tests 60
+# suites 0
+# pass 60
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 10059.814485

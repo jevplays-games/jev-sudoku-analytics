@@ -1,0 +1,9 @@
+import{writeFileSync,mkdirSync}from'node:fs';import{dirname}from'node:path';import{openDb,readMatch,readEvents,readTelemetry}from'../server/db.js';import{loadConfig}from'../server/config.js';import{operatorReport}from'../server/reports.js';import{analyzeMatch,toCsv}from'../shared/analytics.js';
+const args=process.argv.slice(2),arg=(n,d)=>{const i=args.indexOf('--'+n);return i<0?d:args[i+1];};const config=loadConfig(),db=openDb(config.database),matchId=arg('match',null),format=arg('format','json'),out=arg('out',null);
+try{
+  let report;if(matchId){const row=readMatch(db,matchId);if(!row)throw Error('Match not found');if(row.state.phase!=='finished')throw Error('CLI detailed exports are restricted to finished matches to avoid revealing live ranked answers.');report=analyzeMatch(row.initial,readEvents(db,matchId),readTelemetry(db,matchId),{inputUsdPerMillion:config.inputUsdPerMillion,outputUsdPerMillion:config.outputUsdPerMillion});}
+  else report=operatorReport(db,{days:Number(arg('days','30')),difficulty:arg('difficulty',null)});
+  if(!['json','csv'].includes(format))throw Error('Use --format json or csv');
+  const content=format==='json'?JSON.stringify(report,null,2)+'\n':matchId?toCsv(report.jev.decisions,['sequence','ms','source','model','kind','technique','candidates','confidence','entropyBits','topTwoMargin','inferenceMs','preprocessingMs','pacingWaitMs','branchDepth']):toCsv(report.routeMetrics.map(r=>({route:r.route,requests:r.requests,serverErrors:r.serverErrors,clientErrors:r.clientErrors,p50Ms:r.latencyMs.median,p95Ms:r.latencyMs.p95})),['route','requests','serverErrors','clientErrors','p50Ms','p95Ms']);
+  if(out){mkdirSync(dirname(out),{recursive:true});writeFileSync(out,content);console.log(`Wrote ${out}`);}else process.stdout.write(content);
+}finally{db.close();}

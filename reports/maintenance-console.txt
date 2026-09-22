@@ -1,0 +1,16 @@
+(node:2137) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+{
+  "suite": "Isolated CLI and SQLite maintenance smoke",
+  "generatedAt": "2026-09-22T05:24:56.276Z",
+  "passed": 5,
+  "failed": 0,
+  "checks": [
+    "Four unique daily puzzles published; repeat publication does not overwrite",
+    "Finished-match JSON, decision CSV and operator JSON CLI exports",
+    "Expired optional telemetry purged; complete analytics schema recomputed; core game retained",
+    "Consistent backup reopened and checked; overwrite refused",
+    "Live test database integrity and foreign-key checks pass"
+  ],
+  "limitations": "Temporary local fixture database only. Docker volumes, external backup storage, operator schedules and live production restoration were not exercised."
+}

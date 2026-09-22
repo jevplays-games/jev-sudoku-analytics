@@ -1,0 +1,2 @@
+# Optional browser testing only. The game itself does not require Python.
+playwright==1.57.0

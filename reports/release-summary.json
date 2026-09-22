@@ -1,0 +1,73 @@
+{
+  "artifact": "JEV Arcade \u2014 Sudoku Duel",
+  "version": "1.0.0",
+  "generatedAt": "2026-09-22T05:25:49.050227+00:00",
+  "runtimeTested": {
+    "node": "v22.16.0",
+    "python": "Python 3.13.5"
+  },
+  "nodeTests": {
+    "passed": 60,
+    "failed": 0,
+    "report": "node-tests.tap"
+  },
+  "browserSmoke": {
+    "suite": "Chromium end-to-end smoke",
+    "passed": 9,
+    "failed": 0,
+    "checks": [
+      "Initial load, 162 board cells, honest local-opponent label",
+      "Keyboard notes, digit entry, server acknowledgement and undo",
+      "Live analytics, progress chart, 81-cell heatmap and JSON download",
+      "Full puzzle solved through UI and replay-verified by server",
+      "Replay reconstruction, timeline scrubbing and return to live result",
+      "World empty state and unauthorized community scope handling",
+      "Reload recovers the completed server-owned match",
+      "390px mobile layout without horizontal overflow and rules dialog",
+      "No uncaught browser JavaScript errors"
+    ],
+    "externalServices": "No real Discord or JEV calls. Browser used local heuristic.",
+    "browserTransport": "Localhost Python HTTP bridge; EventSource simulated by polling; managed browser blocked URL navigation",
+    "screenshots": [
+      "desktop-game.png",
+      "desktop-analytics.png",
+      "mobile-game.png"
+    ]
+  },
+  "maintenanceSmoke": {
+    "suite": "Isolated CLI and SQLite maintenance smoke",
+    "generatedAt": "2026-09-22T05:24:56.276Z",
+    "passed": 5,
+    "failed": 0,
+    "checks": [
+      "Four unique daily puzzles published; repeat publication does not overwrite",
+      "Finished-match JSON, decision CSV and operator JSON CLI exports",
+      "Expired optional telemetry purged; complete analytics schema recomputed; core game retained",
+      "Consistent backup reopened and checked; overwrite refused",
+      "Live test database integrity and foreign-key checks pass"
+    ],
+    "limitations": "Temporary local fixture database only. Docker volumes, external backup storage, operator schedules and live production restoration were not exercised."
+  },
+  "benchmark": {
+    "runs": 24,
+    "puzzleFamilies": 2,
+    "completed": 24,
+    "statuses": {
+      "solved": 24
+    },
+    "invalidTransitions": 0,
+    "liveJevUsed": false,
+    "report": "benchmark.json"
+  },
+  "notVerified": [
+    "Live TypeSafe JEV credentials/provider behavior",
+    "Live Discord application login, installation and callback delivery",
+    "Docker/Node24 production deployment and public TLS",
+    "Ordinary browser native networking/CSP/SSE together (managed browser bridge used; SSE separately tested by Node HTTP)",
+    "Production load capacity, external security certification, full assistive-technology audit"
+  ],
+  "notes": [
+    "60 named Node tests, 9 browser scenarios and 5 maintenance scenarios are different test granularities, not summed as one unit-test total.",
+    "The included 24-run benchmark uses offline selectors on two synthetic families; it is not evidence of live JEV strength."
+  ]
+}
