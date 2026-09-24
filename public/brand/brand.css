@@ -1,6 +1,6 @@
 /* JEV Arcade shared brand system. Loaded before game.css in every arcade repo.
    Owns: font, color tokens, type scale, spacing, the .jv-* app shell and header.
-   Games own their board and set --accent; they must not redefine the tokens above it. */
+   Games own their board and set the accent trio; they must not redefine the tokens above it. */
 
 @font-face{font-family:Inter;src:url(/brand/inter-var.woff2)format("woff2");font-weight:100 900;font-display:swap;font-style:normal}
 
@@ -12,7 +12,9 @@
   --line:#2c3243; --line-soft:#232838;
   --text:#eef0f7; --muted:#a3aabd; --subtle:#78809a;
 
-  /* Per-game identity. A game overrides --accent (and only --accent) in game.css. */
+  /* Per-game identity. A game overrides the accent TRIO in game.css and nothing else.
+     All three move together: --accent-deep left at the default while --accent is
+     retuned is what left gold and teal games with a violet pressed/hover state. */
   --accent:#a99bff; --accent-deep:#6f5fd6; --accent-ink:#0e1017;
 
   /* Fixed semantics across all nine, replacing the seven old naming schemes. */
@@ -22,8 +24,18 @@
   /* Type */
   --font:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
   --mono:ui-monospace,SFMono-Regular,Consolas,monospace;
+  /* Micro label step. The scale used to stop at 12px, so all nine invented
+     their own bottom end -- 8, 9, 10 and 11px across ~150 declarations -- for
+     eyebrows, table meta, legends and chip captions. One step now. */
+  --fs-2xs:.625rem;
   --fs-xs:.75rem; --fs-sm:.875rem; --fs-md:1rem; --fs-lg:1.125rem;
   --fs-xl:1.375rem; --fs-2xl:clamp(1.5rem,1.1rem + 2vw,2.25rem); --fs-3xl:clamp(1.875rem,1.2rem + 3.2vw,3rem);
+
+  /* Display numerals: scores, KPIs, stat figures. Deliberately FIXED, unlike
+     the two heading clamps above -- a number sitting in a fixed-width card or a
+     grid cell must not grow with the viewport and burst its container, which is
+     why every game had hardcoded these instead of reaching for --fs-2xl. */
+  --fs-num-sm:1.5rem; --fs-num:1.75rem; --fs-num-lg:2.25rem;
   --lh-tight:1.15; --lh:1.5;
   --track-caps:.08em;
 
@@ -39,7 +51,14 @@
   --sa-b:env(safe-area-inset-bottom,0px); --sa-l:env(safe-area-inset-left,0px);
 
   --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.28);
-  --ring:0 0 0 2px var(--bg),0 0 0 4px var(--accent);
+
+  /* Focus. An outline, not a box-shadow: a shadow ring is clipped by the
+     overflow:hidden on every board and analytics surface, which is why all nine
+     games had replaced it with an outline of their own -- in three colours,
+     three widths and three offsets. Tokens, so a dense board tightens the ring
+     by retuning --focus-offset on the cell (.cell{--focus-offset:0}) rather than
+     restating colour and width it would then own forever. */
+  --focus-color:var(--accent); --focus-w:3px; --focus-offset:3px;
 }
 
 *,*::before,*::after{box-sizing:border-box}
@@ -57,7 +76,7 @@ h1{font-size:var(--fs-2xl)} h2{font-size:var(--fs-xl)} h3{font-size:var(--fs-lg)
 p{margin:0}
 :where(button,input,select,textarea){font:inherit;color:inherit}
 :where(a){color:var(--accent);text-decoration:none}
-:focus-visible{outline:none;box-shadow:var(--ring)}
+:focus-visible{outline:var(--focus-w) solid var(--focus-color);outline-offset:var(--focus-offset);box-shadow:none}
 .jv-eyebrow{font-size:var(--fs-xs);letter-spacing:var(--track-caps);text-transform:uppercase;color:var(--muted);font-weight:600}
 .jv-num{font-family:var(--mono);font-variant-numeric:tabular-nums}
 
@@ -81,7 +100,19 @@ p{margin:0}
 @media(max-width:600px),(max-height:950px){
   .jv-main>.jv-first{order:-1}
 }
-@media(max-width:600px){
+/* Hero headline: one recipe. All nine had retuned it on their own -- six sizes,
+   five weights, five letter-spacings (two of them in px, so they did not track
+   the clamp) and margins in five different units. A game styles nothing here.
+   Section headings on secondary views stay on the plain h1 above, a step down. */
+.jv-hero h1{font-size:var(--fs-3xl);font-weight:700;letter-spacing:-.03em;line-height:1.08;margin:0 0 var(--s3)}
+.jv-hero h1 span{color:var(--muted);font-weight:400}
+.jv-hero p{color:var(--muted);font-size:var(--fs-sm);max-width:62ch}
+.jv-tagline{margin-top:var(--s2);font-size:var(--fs-xs);letter-spacing:var(--track-caps);color:var(--subtle)}
+
+/* Short viewports get the smaller hero too, not just narrow ones -- tic-tac-toe
+   had worked this out alone for landscape phones. Same trigger family as the
+   board-first rule above. */
+@media(max-width:600px),(max-height:560px){
   .jv-hero h1{font-size:var(--fs-xl)}
 }
 
@@ -195,13 +226,40 @@ p{margin:0}
 /* Touch gets the same affordance on press, since hover never fires. */
 .jv-btn:active:not(:disabled){border-color:var(--accent)}
 
-.jv-panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);padding:var(--s4)}
+.jv-panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);padding:var(--s5);min-width:0}
+.jv-panel.is-tight{padding:var(--s4)}
+/* One step down on phones, for every game. Several had re-declared .jv-panel
+   padding (and mastermind its radius) inside their own media queries, which is
+   how the same component ended up 12, 16 and 24px across the nine. */
+@media(max-width:600px){
+  .jv-panel{padding:var(--s4)}
+  .jv-panel.is-tight{padding:var(--s3)}
+}
+/* Identity strip along the top of a surface. Nine games drew this with a
+   hardcoded hex; it is the shared --human/--jev pair everywhere now. */
+.jv-panel.is-human{border-top:2px solid var(--human)}
+.jv-panel.is-jev{border-top:2px solid var(--jev)}
+
+/* The quiet inline button -- previously .text-button, .link-button and
+   .icon-button across the nine, for one role. */
+.jv-link-btn{
+  display:inline-flex;align-items:center;gap:var(--s1);
+  background:none;border:0;padding:0;
+  color:var(--accent);font-size:var(--fs-sm);font-weight:600;cursor:pointer;
+  text-decoration:underline;text-underline-offset:3px;
+}
+.jv-link-btn:disabled{opacity:.45;cursor:not-allowed;text-decoration:none}
 
 /* Board sizing helper: fits width AND height, never overflows, never a fixed px.
    --fit-max: natural max width. --fit-reserve: vertical space the page needs
    around the board. --fit-ratio: board width / height. */
 .jv-fit{
   width:100%;
+  /* vh first, dvh second: browsers without dynamic viewport units keep a
+     working cap instead of dropping the declaration and overflowing. The three
+     games that had inlined this formula all carried the fallback; the helper
+     did not. */
+  max-width:min(100%,var(--fit-max,560px),calc((100vh - var(--header-h) - var(--fit-reserve,220px)) * var(--fit-ratio,1)));
   max-width:min(100%,var(--fit-max,560px),calc((100dvh - var(--header-h) - var(--fit-reserve,220px)) * var(--fit-ratio,1)));
   margin-inline:auto;
 }

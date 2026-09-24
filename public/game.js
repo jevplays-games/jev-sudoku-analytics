@@ -156,6 +156,20 @@ async function boot(){buildBoards();render();$('leaderboard-date').value=new Dat
     const last=me.activeMatch?.id||storage.get('jev-current');if(last&&last!=='offline'&&last!=='replay'){try{await resume(last);}catch{storage.remove('jev-current');}}
     if(!current)render();
   }catch(e){$('connection-label').textContent='Offline';$('offline-button').hidden=!storage.get('jev-practice-copy');notice('The server is unreachable. An already loaded puzzle can be continued as an offline practice copy.');}
+  await autoStart();
+}
+/* Auto-start: the puzzle is playable as soon as the page is, with no click.
+   It returns early when an attempt is already running, because boot() has just
+   resumed me.activeMatch -- so a reload rejoins the attempt instead of
+   forfeiting it, and startGame()'s "an official attempt remains used" confirm
+   can never be triggered by a page load.
+   Ranked needs a signed-in account AND the ranked capability, the same gate the
+   player faces by hand. Anything less starts practice, so a page load can never
+   spend the one daily ranked attempt on its own. */
+async function autoStart(){
+  if(busy||(current&&['running','settling'].includes(current.phase)))return;
+  $('mode').value=me?.user&&me?.capabilities?.jev?'ranked':'practice';
+  await startGame();
 }
 function setDifficulty(d){difficulty=d;storage.set('jev-difficulty',d);for(const b of document.querySelectorAll('[data-difficulty]')){b.classList.toggle('selected',b.dataset.difficulty===d);b.setAttribute('aria-pressed',String(b.dataset.difficulty===d));}}
 for(const b of document.querySelectorAll('[data-view]'))b.addEventListener('click',()=>showView(b.dataset.view));
