@@ -52,6 +52,11 @@
 
   --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.28);
 
+  /* How wide the content shell may grow. It used to be a flat 1280px, which
+     left a third of a 1920 display and half of a 2560 one as empty gutter in
+     all nine games while the page itself ran two to three screens tall. */
+  --shell:1280px;
+
   /* Focus. An outline, not a box-shadow: a shadow ring is clipped by the
      overflow:hidden on every board and analytics surface, which is why all nine
      games had replaced it with an outline of their own -- in three colours,
@@ -87,7 +92,7 @@ p{margin:0}
   padding-left:var(--sa-l);padding-right:var(--sa-r);
 }
 .jv-main{
-  flex:1;width:100%;max-width:1280px;margin:0 auto;
+  flex:1;width:100%;max-width:var(--shell);margin:0 auto;
   padding:var(--s4) var(--s4) calc(var(--s6) + var(--sa-b));
   display:flex;flex-direction:column;gap:var(--s5);
 }
@@ -259,10 +264,21 @@ p{margin:0}
      working cap instead of dropping the declaration and overflowing. The three
      games that had inlined this formula all carried the fallback; the helper
      did not. */
-  max-width:min(100%,var(--fit-max,560px),calc((100vh - var(--header-h) - var(--fit-reserve,220px)) * var(--fit-ratio,1)));
-  max-width:min(100%,var(--fit-max,560px),calc((100dvh - var(--header-h) - var(--fit-reserve,220px)) * var(--fit-ratio,1)));
+  /* --fit-max is a floor on large screens, not a ceiling: max() lets the board
+     grow with the viewport instead of staying its authored size while the
+     window gets wider. The height term still caps it, so a bigger board can
+     never push the rest of the page below the fold. */
+  max-width:min(100%,max(var(--fit-max,560px),32vw),calc((100vh - var(--header-h) - var(--fit-reserve,220px)) * var(--fit-ratio,1)));
+  max-width:min(100%,max(var(--fit-max,560px),32vw),calc((100dvh - var(--header-h) - var(--fit-reserve,220px)) * var(--fit-ratio,1)));
   margin-inline:auto;
 }
+
+/* Large displays: give the shell the width back, in steps rather than fully
+   fluid so the layout still has settled sizes to design against. Body text is
+   unaffected -- .jv-hero p is capped at 62ch and stays readable. */
+@media(min-width:1600px){:root{--shell:1440px}}
+@media(min-width:1920px){:root{--shell:1680px}}
+@media(min-width:2400px){:root{--shell:1920px}}
 
 /* ---------- Breakpoints: 600 / 900 / 1280, shared by all nine ---------- */
 @media(min-width:600px){
