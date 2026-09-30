@@ -11,6 +11,18 @@ export function distribution(values) {
 export function entropy(probabilities) { return Object.values(probabilities||{}).reduce((s,p)=>p>0?s-p*Math.log2(p):s,0); }
 const countBy=(items,key)=>items.reduce((o,x)=>{const k=typeof key==='function'?key(x):x[key];o[k]=(o[k]||0)+1;return o;},{});
 const sum=(xs,key)=>xs.reduce((n,x)=>n+(Number.isFinite(x[key])?x[key]:0),0);
+/** The client-reported section of a report. Exported so retention and consent withdrawal can rebuild it alone. */
+export function browserSection(client) {
+  const browserCounts=countBy(client,'name');
+  const dwell=Array(81).fill(0);for(const t of client.filter(t=>t.name==='cell_focus')) if(Number.isInteger(t.properties.cell)) dwell[t.properties.cell]+=t.properties.durationMs||0;
+  return {trust:'client-reported; optional; never used for scoring',events:client.length,eventCounts:browserCounts,
+      focusDwellMsByCell:dwell,focusDwellMs:dwell.reduce((a,b)=>a+b,0),notesAdded:browserCounts.note_added||0,notesRemoved:browserCounts.note_removed||0,
+      hiddenMs:sum(client.filter(t=>t.name==='visibility').map(t=>t.properties),'hiddenMs'),
+      inputSources:countBy(client.filter(t=>t.name==='input_method'),t=>t.properties.method),
+      actionRttMs:distribution(client.filter(t=>t.name==='action_rtt').map(t=>t.properties.durationMs)),
+      longTasksMs:distribution(client.filter(t=>t.name==='long_task').map(t=>t.properties.durationMs)),
+      reconnects:browserCounts.reconnect||0,localConflicts:browserCounts.local_conflict||0};
+}
 export function analyzeMatch(initial,events,telemetry=[],options={}) {
   let s=createMatchState(initial.givens,initial.config);
   const startEmpty=s.givens.filter(x=>!x).length, initialFilled=81-startEmpty;
@@ -20,7 +32,7 @@ export function analyzeMatch(initial,events,telemetry=[],options={}) {
   let lastTime=null, peakBranchDepth=0;
   for(const e of events) {
     const before=s;
-    s=advanceState(s,e);
+    s=advanceState(s,e,{trusted:!!options.trusted});
     if(e.type==='human') {
       human.acceptedActions++; human.firstActionMs ??= e.ms;
       if(lastTime!==null) intervals.push(e.ms-lastTime);lastTime=e.ms;times.push(e.ms);
@@ -61,8 +73,6 @@ export function analyzeMatch(initial,events,telemetry=[],options={}) {
   const costRate=options.inputUsdPerMillion??null, outputRate=options.outputUsdPerMillion??null;
   const hasCost=Number.isFinite(costRate)&&Number.isFinite(outputRate)&&usageKnown.length===requests.length&&requests.every(r=>Number.isFinite(r.outputTokens))&&requests.length>0;
   const localConflicts=rejections.filter(t=>t.properties.reason==='local_conflict').length;
-  const browserCounts=countBy(client,'name');
-  const dwell=Array(81).fill(0);for(const t of client.filter(t=>t.name==='cell_focus')) if(Number.isInteger(t.properties.cell)) dwell[t.properties.cell]+=t.properties.durationMs||0;
   const completed=s.human.finishMs!==null, filled=s.human.values.filter(Boolean).length-initialFilled;
   return {schemaVersion:ANALYTICS_VERSION,computedThroughMs:elapsed,complete:terminal,
     dimensions:{difficulty:s.config.difficulty,puzzleBand:s.config.puzzleBand||'standard-v1',mode:s.config.mode,
@@ -93,20 +103,15 @@ export function analyzeMatch(initial,events,telemetry=[],options={}) {
       inputTokens,outputTokens,requestsWithUsage:usageKnown.length,requestsWithoutUsage:requests.length-usageKnown.length,requestsWithoutOutputUsage:requests.filter(r=>!Number.isFinite(r.outputTokens)).length,
       estimatedCostUsd:hasCost?(inputTokens*costRate+outputTokens*outputRate)/1e6:null,costIsEstimate:true,
       costRatesUsdPerMillion:{input:costRate,output:outputRate},decisions},
-    browser:{trust:'client-reported; optional; never used for scoring',events:client.length,eventCounts:browserCounts,
-      focusDwellMsByCell:dwell,focusDwellMs:dwell.reduce((a,b)=>a+b,0),notesAdded:browserCounts.note_added||0,notesRemoved:browserCounts.note_removed||0,
-      hiddenMs:sum(client.filter(t=>t.name==='visibility').map(t=>t.properties),'hiddenMs'),
-      inputSources:countBy(client.filter(t=>t.name==='input_method'),t=>t.properties.method),
-      actionRttMs:distribution(client.filter(t=>t.name==='action_rtt').map(t=>t.properties.durationMs)),
-      longTasksMs:distribution(client.filter(t=>t.name==='long_task').map(t=>t.properties.durationMs)),
-      reconnects:browserCounts.reconnect||0,localConflicts:browserCounts.local_conflict||0},timeline,
+    browser:browserSection(client),timeline,
     caveats:['Progress counts filled cells, not correctness.','Confidence is distribution concentration, not calibrated Sudoku accuracy.',
       'Human move intervals include thinking, inactivity, and network transit.','Client telemetry is opt-in, incomplete, and forgeable.',
       'Unknown costs and empty denominators are null, not zero.']};
 }
 export function redactAnalytics(report,hideAnswers) {
+  if(!hideAnswers) return report; // nothing to strip; callers treat reports as read-only, so no copy is needed
   const r=structuredClone(report);
-  if(hideAnswers) r.jev.decisions=r.jev.decisions.map(({actionId,cell,digit,proof,probabilities,candidateEvidence,...safe})=>safe);
+  r.jev.decisions=r.jev.decisions.map(({actionId,cell,digit,proof,probabilities,candidateEvidence,...safe})=>safe);
   return r;
 }
 export function aggregateReports(reports) {

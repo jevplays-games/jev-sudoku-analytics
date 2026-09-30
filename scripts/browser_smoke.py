@@ -6,8 +6,8 @@ from pathlib import Path
 from playwright.sync_api import sync_playwright, expect
 
 ROOT = Path(__file__).resolve().parents[1]
-REPORTS = ROOT / 'reports'
-REPORTS.mkdir(exist_ok=True)
+REPORTS = ROOT / 'reports' / 'workers'
+REPORTS.mkdir(parents=True, exist_ok=True)
 
 def free_port() -> int:
     with socket.socket() as s:
@@ -21,8 +21,8 @@ def mount_test_page(page, base: str, force_bridge: bool = False) -> None:
     """Use in-memory assets + a localhost HTTP bridge where managed Chromium blocks navigation.
 
     This fallback does not modify browser policies. It tests the real app DOM and
-    real Node HTTP handlers, but simulates EventSource with state polling. Native
-    browser networking, cookies, CSP enforcement and SSE still need deployment QA.
+    real Worker handler (through the local Node adapter). Native browser networking,
+    cookies and CSP enforcement still need deployment QA.
     """
     global BRIDGE_MODE
     if not (force_bridge or BRIDGE_MODE):
@@ -72,15 +72,9 @@ def mount_test_page(page, base: str, force_bridge: bool = False) -> None:
         const h=[...a].map(x=>x.toString(16).padStart(2,'0')).join('');return `${h.slice(0,8)}-${h.slice(8,12)}-${h.slice(12,16)}-${h.slice(16,20)}-${h.slice(20)}`;
       }});
       window.fetch=async (path,options={})=>{const r=await window.__testHttpBridge({path:String(path),method:options.method||'GET',headers:options.headers||{},body:options.body??null});return new Response(r.body,{status:r.status,headers:r.headers});};
-      window.EventSource=class {
-        constructor(path){this.path=path.replace(/\/events$/,'');this.handlers={};this.closed=false;this.timer=setInterval(()=>this.poll(),250);setTimeout(()=>{this.onopen?.();this.poll();},10);}
-        addEventListener(name,fn){this.handlers[name]=fn;}
-        async poll(){if(this.closed)return;try{const r=await fetch(this.path);if(!r.ok)throw Error();const data=await r.json();if(!this.closed)this.handlers.state?.({data:JSON.stringify(data)});}catch{if(!this.closed)this.onerror?.();}}
-        close(){this.closed=true;clearInterval(this.timer);}
-      };
     }""", saved)
     sources = {}
-    for file in (ROOT/'shared').glob('*.js'): sources['/shared/'+file.name]=file.read_text()
+    for file in (ROOT/'public'/'shared').glob('*.js'): sources['/shared/'+file.name]=file.read_text()
     for name in ['game.js','analytics-ui.js']: sources['/'+name]=(ROOT/'public'/name).read_text()
     sources['/brand/brand.js']=(ROOT/'public/brand/brand.js').read_text()
     page.evaluate(r"""async sources => {
@@ -105,13 +99,13 @@ def run() -> None:
                'DATABASE_PATH':str(Path(tmp)/'test.sqlite'), 'TYPESAFE_API_KEY':'',
                'DISCORD_CLIENT_ID':'', 'DISCORD_CLIENT_SECRET':'', 'NODE_ENV':'test',
                'LAUNCH_SIGNING_KEY':'browser-test-only-not-a-secret-000000000000',
-               'PRACTICE_PACING_MS':'250'}
+               'PRACTICE_PACING_MS':'2000'}
         log = (REPORTS/'browser-server.log').open('w', encoding='utf-8')
-        process = subprocess.Popen(['node', 'server/server.js'], cwd=ROOT, env=env, stdout=log, stderr=log)
+        process = subprocess.Popen(['node', 'local/server.js'], cwd=ROOT, env=env, stdout=log, stderr=log)
         try:
             for _ in range(100):
                 try:
-                    with urllib.request.urlopen(base+'/healthz', timeout=1) as response:
+                    with urllib.request.urlopen(base+'/api/health', timeout=1) as response:
                         if response.status == 200: break
                 except Exception: time.sleep(.1)
             else: raise RuntimeError('Test server did not start')
@@ -227,7 +221,7 @@ def run() -> None:
             process.kill(); process.wait(timeout=10); log.close()
     result={'suite':'Chromium end-to-end smoke','passed':len(checks),'failed':0,'checks':checks,
             'externalServices':'No real Discord or JEV calls. Browser used local heuristic.',
-            'browserTransport':'Localhost Python HTTP bridge; EventSource simulated by polling; managed browser blocked URL navigation' if BRIDGE_MODE else 'Native browser HTTP and SSE',
+            'browserTransport':'Localhost Python HTTP bridge; managed browser blocked URL navigation' if BRIDGE_MODE else 'Native browser HTTP (the game polls; there is no event stream)',
             'screenshots':['desktop-game.png','desktop-analytics.png','mobile-game.png']}
     (REPORTS/'browser-results.json').write_text(json.dumps(result,indent=2)+'\n',encoding='utf-8')
     print(json.dumps(result,indent=2))

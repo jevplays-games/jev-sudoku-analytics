@@ -1,8 +1,0 @@
-{$GAME_DOMAIN} {
-    encode zstd gzip
-    # Do not enable raw access logs: OAuth callback query strings contain codes.
-    # Application telemetry records normalized routes without queries instead.
-    reverse_proxy app:3000 {
-        flush_interval -1
-    }
-}

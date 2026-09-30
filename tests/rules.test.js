@@ -1,8 +1,8 @@
 import test from 'node:test';import assert from 'node:assert/strict';import {readFileSync}from'node:fs';
-import {parseGivens,isSolved,candidateMask,countSolutions,validateHuman,applyHuman,ALL,bit,isContradiction,canonical,PEERS}from'../shared/sudoku.js';
-import {createMatchState,advanceState,publicState}from'../shared/match.js';
-import {makeReplay,replayEvents}from'../shared/replay.js';
-import {getJevCandidates,heuristicChoice,applyJev,logicalActions,PROFILES}from'../shared/sudoku-ai.js';
+import {parseGivens,isSolved,candidateMask,countSolutions,validateHuman,applyHuman,ALL,bit,isContradiction,canonical,PEERS}from'../public/shared/sudoku.js';
+import {createMatchState,advanceState,publicState}from'../public/shared/match.js';
+import {makeReplay,replayEvents}from'../public/shared/replay.js';
+import {getJevCandidates,heuristicChoice,applyJev,logicalActions,PROFILES}from'../public/shared/sudoku-ai.js';
 import {generatePuzzle}from'../scripts/puzzle-lib.js';
 const f=JSON.parse(readFileSync(new URL('../fixtures/sudoku-cases.json',import.meta.url)));
 const start=(p=f.classic,c={})=>advanceState(createMatchState(p,c),{type:'start',ms:0});

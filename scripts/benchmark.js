@@ -1,7 +1,7 @@
 import {writeFileSync,mkdirSync}from'node:fs';import{dirname}from'node:path';import{performance}from'node:perf_hooks';
-import{generatePuzzle,rng}from'./puzzle-lib.js';import{createMatchState,advanceState}from'../shared/match.js';
-import{getJevCandidates,heuristicChoice,PROFILES}from'../shared/sudoku-ai.js';import{distribution}from'../shared/analytics.js';
-import{JevAdapter}from'../server/jev.js';import{loadConfig}from'../server/config.js';import{hash}from'../server/security.js';
+import{generatePuzzle,rng}from'./puzzle-lib.js';import{createMatchState,advanceState}from'../public/shared/match.js';
+import{getJevCandidates,heuristicChoice,PROFILES}from'../public/shared/sudoku-ai.js';import{distribution}from'../public/shared/analytics.js';
+import{JevAdapter}from'../server/jev.js';import{loadConfig}from'../server/config.js';import{createHash}from'node:crypto';const hash=x=>createHash('sha256').update(x).digest('hex');
 const args=process.argv.slice(2),arg=(name,fallback)=>{const i=args.indexOf(`--${name}`);return i<0?fallback:args[i+1];};
 const count=Number(arg('puzzles','2')),maxActions=Number(arg('max-actions','600')),split=arg('split','smoke'),seed=arg('seed','release-v1');
 const difficulties=arg('difficulties','easy,normal,hard,jev').split(','),selectors=arg('selectors','canonical,greedy,random').split(',');
@@ -9,9 +9,9 @@ const output=arg('out','reports/benchmark.json');
 if(!Number.isInteger(count)||count<1||count>1000||!Number.isInteger(maxActions)||maxActions<1||maxActions>5000)throw Error('Invalid benchmark bounds');
 if(!['smoke','development','holdout'].includes(split))throw Error('Use --split smoke, development, or holdout');
 if(!difficulties.every(d=>PROFILES[d])||!selectors.every(s=>['canonical','greedy','random','jev'].includes(s)))throw Error('Unknown profile or selector');
-const config=loadConfig();if(selectors.includes('jev')&&(!args.includes('--live')||!config.jevKey))throw Error('Live JEV requires both --live and TYPESAFE_API_KEY; it may incur charges.');
+const config=loadConfig(process.env);if(selectors.includes('jev')&&(!args.includes('--live')||!config.jevKey))throw Error('Live JEV requires both --live and TYPESAFE_API_KEY; it may incur charges.');
 const rows=[],transcripts=[];let requestLog=[];
-const adapter=new JevAdapter(config,{onRequest:event=>requestLog.push(event.properties)});
+const adapter=new JevAdapter(config,{onRequest:event=>{requestLog.push(event.properties);}});
 for(let i=0;i<count;i++){
   const puzzle=generatePuzzle(`${split}:${seed}:family:${i}`),puzzleId=hash(puzzle.givens);
   for(const difficulty of difficulties)for(const selector of selectors){

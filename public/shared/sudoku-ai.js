@@ -62,18 +62,32 @@ export function rawCandidates(board,difficulty) {
   let cell=-1; for(let i=0;i<81;i++) if(masks[i] && (cell<0 || popcount(masks[i])<popcount(masks[cell]))) cell=i;
   return cell<0 ? [] : digits(masks[cell]).map(digit=> {const a={kind:'assume',cell,digit,proof:{technique:'assumption',cells:[cell],unit:null}};a.id=effectId(a);return a;});
 }
+// Bounded look-ahead of forced (naked single) placements. Candidate masks are maintained incrementally: a placement can
+// only remove that digit from its empty peers, so this is identical to recomputing every mask each step, at a fraction of the CPU.
 function preview(board,action,budget) {
-  const b=clone(board); let placements=0, eliminations=0, steps=0;
-  if(action.kind==='place'||action.kind==='assume') b.values[action.cell]=action.digit;
-  if(action.kind==='eliminate') b.eliminated[action.cell]|=bit(action.digit);
+  const values=[...board.values], eliminated=[...board.eliminated]; let placements=0, eliminations=0, steps=0;
+  if(action.kind==='place'||action.kind==='assume') values[action.cell]=action.digit;
+  if(action.kind==='eliminate') eliminated[action.cell]|=bit(action.digit);
+  const masks=candidateMasks(values,eliminated);
   while(steps<budget) {
-    const masks=candidateMasks(b.values,b.eliminated), i=masks.findIndex(m=>popcount(m)===1);
-    if(i<0 || isContradiction(b.values,b.eliminated)) break;
-    b.values[i]=digits(masks[i])[0]; placements++; steps++;
+    let i=-1; for(let k=0;k<81;k++){const m=masks[k]; if(m && !(m&(m-1))){i=k;break;}}
+    if(i<0 || isContradiction(values,eliminated,masks)) break;
+    const d=32-Math.clz32(masks[i]); values[i]=d; placements++; steps++;
+    masks[i]=0; for(const j of PEERS[i]) if(!values[j]) masks[j]&=~bit(d);
   }
-  return {previewPlacements:placements,previewEliminations:eliminations,previewSteps:steps,previewContradiction:isContradiction(b.values,b.eliminated)};
+  return {previewPlacements:placements,previewEliminations:eliminations,previewSteps:steps,previewContradiction:isContradiction(values,eliminated,masks)};
 }
+// Small memo: the same board is asked for candidates by the scheduler and again by advanceState's validation. Results are
+// read-only for every caller; the key covers every input that affects them (branches matter only through their length).
+const memo=new Map();
 export function getJevCandidates(board,difficulty='normal') {
+  const key=`${difficulty}|${board.values.join('')}|${board.eliminated.join(',')}|${board.branches.length}`;
+  const hit=memo.get(key); if(hit) {memo.delete(key);memo.set(key,hit);return hit;}
+  const result=computeJevCandidates(board,difficulty);
+  memo.set(key,result); if(memo.size>16) memo.delete(memo.keys().next().value);
+  return result;
+}
+function computeJevCandidates(board,difficulty) {
   const profile=PROFILES[difficulty]; invariant(profile,'invalid_difficulty');
   const raw=rawCandidates(board,difficulty), masks=candidateMasks(board.values,board.eliminated);
   const scored=raw.map(a=>({...a,features:{remainingCandidates:a.cell===undefined?0:popcount(masks[a.cell]),
@@ -94,10 +108,12 @@ export function heuristicChoice(candidates) {
     (a.kind==='place'?-1:0)-(b.kind==='place'?-1:0) ||
     (b.features?.affectedPeers||0)-(a.features?.affectedPeers||0) || a.id.localeCompare(b.id))[0];
 }
-export function applyJev(board,action,difficulty) {
+export function applyJev(board,action,difficulty,{trusted=false}={}) {
   invariant(action && typeof action==='object','invalid_jev_action');
-  const matching=rawCandidates(board,difficulty).find(a=>a.id===action.id && a.kind===action.kind && a.cell===action.cell && a.digit===action.digit && canonical(a.proof)===canonical(action.proof));
-  invariant(matching,'invalid_jev_proof');
+  if(!trusted) {
+    const matching=rawCandidates(board,difficulty).find(a=>a.id===action.id && a.kind===action.kind && a.cell===action.cell && a.digit===action.digit && canonical(a.proof)===canonical(action.proof));
+    invariant(matching,'invalid_jev_proof');
+  }
   const b=clone(board);
   if(action.kind==='backtrack') {
     const branch=b.branches.pop(); b.values=branch.values; b.eliminated=branch.eliminated; b.eliminated[branch.cell]|=bit(branch.digit);

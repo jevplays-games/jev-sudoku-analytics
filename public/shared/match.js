@@ -18,7 +18,10 @@ export function raceOutcome(s) {
   if(h!==null) return 'human'; if(j!==null) return 'jev';
   return s.phase==='finished'?'draw':'pending';
 }
-export function advanceState(state,event) {
+// options.candidates: an already-computed getJevCandidates(...).candidates for this board (skips recomputation, still validated against).
+// options.trusted: the event was already validated when it was recorded; skip candidate/proof re-derivation. Used only by the server
+// when re-reading its own recorded events for analytics. Anything imported or client supplied is replayed untrusted.
+export function advanceState(state,event,options={}) {
   invariant(event && Number.isSafeInteger(event.ms) && event.ms>=state.elapsedMs,'invalid_event_time');
   invariant(typeof event.type==='string','invalid_event');
   const s=clone(state); s.elapsedMs=event.ms; s.sequence++;
@@ -33,12 +36,14 @@ export function advanceState(state,event) {
   } else if(event.type==='jev') {
     invariant(s.jev.finishMs===null && s.jev.status!=='stalled' && event.ms<s.config.timeLimitMs,'jev_finished');
     invariant(event.ms>=s.jev.lastActionMs+s.config.pacingMs,'jev_pacing_violation');
-    const c=getJevCandidates(s.jev,s.config.difficulty).candidates;
-    invariant(c.some(a=>a.id===event.action?.id),'jev_candidate_not_offered');
+    if(!options.trusted) {
+      const c=options.candidates||getJevCandidates(s.jev,s.config.difficulty).candidates;
+      invariant(c.some(a=>a.id===event.action?.id),'jev_candidate_not_offered');
+    }
     if(event.decision?.source==='jev') {
       invariant(event.decision.model===s.config.model && event.decision.actionId===event.action.id,'jev_model_or_choice_mismatch');
     }
-    s.jev=applyJev(s.jev,event.action,s.config.difficulty);s.jev.lastActionMs=event.ms;
+    s.jev=applyJev(s.jev,event.action,s.config.difficulty,{trusted:options.trusted});s.jev.lastActionMs=event.ms;
     if(isSolved(s.jev.values,s.givens)) {s.jev.finishMs=event.ms;s.jev.status='finished';} else s.jev.status='thinking';
   } else if(event.type==='jev_stalled') {
     invariant(!getJevCandidates(s.jev,s.config.difficulty).candidates.length,'false_stall');s.jev.status='stalled';

@@ -1,0 +1,25 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "jev-sudoku",
+  "main": "server/worker.js",
+  "compatibility_date": "2026-09-22",
+  // Workers Free: no cron triggers (the account-wide limit of five is used), no custom CPU limit, no Durable Objects, no containers.
+  "routes": [{ "pattern": "sudoku.jevplay.games", "custom_domain": true }],
+  "assets": { "directory": "./public", "binding": "ASSETS", "run_worker_first": ["/api/*", "/"] },
+  "d1_databases": [{ "binding": "DB", "database_name": "jev-sudoku", "database_id": "REPLACE_WITH_D1_ID", "migrations_dir": "migrations" }],
+  // Secrets are set with `wrangler secret put` and never live here: TYPESAFE_API_KEY, LAUNCH_SIGNING_KEY, DISCORD_CLIENT_SECRET,
+  // ADMIN_ANALYTICS_TOKEN. DISCORD_CLIENT_ID, DISCORD_PUBLIC_KEY and ADMIN_DISCORD_IDS are not secret; set them as secrets or add them here.
+  "vars": {
+    "APP_ORIGIN": "https://sudoku.jevplay.games",
+    "JEV_MODEL": "jev-1.13.0",
+    "PRACTICE_PACING_MS": "8000",
+    "MAX_ACTIVE_MATCHES": "20",
+    "MAX_JEV_CALLS_PER_DAY": "5000",
+    "JEV_CALLS_PER_HOUR": "600",
+    "MAX_JEV_REQUESTS_PER_MATCH": "600",
+    "ABANDONED_AFTER_MS": "600000",
+    "TELEMETRY_RETENTION_DAYS": "30",
+    "OPERATIONS_RETENTION_DAYS": "30"
+  },
+  "observability": { "enabled": false }
+}

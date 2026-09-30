@@ -1,0 +1,262 @@
+{
+  "format": "candidate-golden-v1",
+  "policyVersion": "sudoku-policy-v1",
+  "cases": [
+    {
+      "seed": "golden:0",
+      "difficulty": "easy",
+      "selector": "canonical",
+      "givens": "803050900960087030450000000040032800000901750030000004304570026076124008200090040",
+      "steps": 45,
+      "digest": "7e936610eabe03ec2e0afa914a5a7260a594febb3154206341800157ac0b428b"
+    },
+    {
+      "seed": "golden:0",
+      "difficulty": "easy",
+      "selector": "random",
+      "givens": "803050900960087030450000000040032800000901750030000004304570026076124008200090040",
+      "steps": 45,
+      "digest": "62705f37005fbb2aac6db3a53703d2fb5cb5975b3e8a67cbdd1113c80c1e2cfe"
+    },
+    {
+      "seed": "golden:0",
+      "difficulty": "normal",
+      "selector": "canonical",
+      "givens": "803050900960087030450000000040032800000901750030000004304570026076124008200090040",
+      "steps": 61,
+      "digest": "f62ff8dbca9240650bca4119b0296e2c220bff77e9e32293bdcfb17cb10bc5cc"
+    },
+    {
+      "seed": "golden:0",
+      "difficulty": "normal",
+      "selector": "random",
+      "givens": "803050900960087030450000000040032800000901750030000004304570026076124008200090040",
+      "steps": 47,
+      "digest": "0747990c28bf439825714fad19c01c161f36b15e24efa8ed8ac1daf014fb6467"
+    },
+    {
+      "seed": "golden:0",
+      "difficulty": "hard",
+      "selector": "canonical",
+      "givens": "803050900960087030450000000040032800000901750030000004304570026076124008200090040",
+      "steps": 118,
+      "digest": "e809ac18eaba5c855a890bd04f37d5de3a7d65e73854c5305d20cd6ab01388ef"
+    },
+    {
+      "seed": "golden:0",
+      "difficulty": "hard",
+      "selector": "random",
+      "givens": "803050900960087030450000000040032800000901750030000004304570026076124008200090040",
+      "steps": 62,
+      "digest": "0a513c4940aa32be2ed1a18b5dfa4e8f755ceb6326e6531caddd90b34f69eda7"
+    },
+    {
+      "seed": "golden:0",
+      "difficulty": "jev",
+      "selector": "canonical",
+      "givens": "803050900960087030450000000040032800000901750030000004304570026076124008200090040",
+      "steps": 118,
+      "digest": "e6cc2fc480c2a90242d2ba478e666cdcdb8a5e4657b7b1ffa3447b1e3c8a65fe"
+    },
+    {
+      "seed": "golden:0",
+      "difficulty": "jev",
+      "selector": "random",
+      "givens": "803050900960087030450000000040032800000901750030000004304570026076124008200090040",
+      "steps": 68,
+      "digest": "0ad07db1f69b3f6802fdd46ea9c7061d2a75aa7b2e69a2fb91cdef421db5bb20"
+    },
+    {
+      "seed": "golden:1",
+      "difficulty": "easy",
+      "selector": "canonical",
+      "givens": "270061004490002006061400208610579800040003607002000000084000301030006005020050780",
+      "steps": 45,
+      "digest": "aa44e5d707def500b97b2d9e20a9553dc8516b997296805b1600e2091af9f298"
+    },
+    {
+      "seed": "golden:1",
+      "difficulty": "easy",
+      "selector": "random",
+      "givens": "270061004490002006061400208610579800040003607002000000084000301030006005020050780",
+      "steps": 45,
+      "digest": "ac179c8be4c2d71f5d959015e7c49a5c713cbda80f7a4d7fa23e7fc146da91fe"
+    },
+    {
+      "seed": "golden:1",
+      "difficulty": "normal",
+      "selector": "canonical",
+      "givens": "270061004490002006061400208610579800040003607002000000084000301030006005020050780",
+      "steps": 63,
+      "digest": "0904f25ddf681d7430cefd0d559488e097aeea7deb8fb3adcd775bcbdc4d6aec"
+    },
+    {
+      "seed": "golden:1",
+      "difficulty": "normal",
+      "selector": "random",
+      "givens": "270061004490002006061400208610579800040003607002000000084000301030006005020050780",
+      "steps": 53,
+      "digest": "ba915846431ab4a56f549bb02ef2cd7c98b92ccfb56aa81fc81af6284ee81aee"
+    },
+    {
+      "seed": "golden:1",
+      "difficulty": "hard",
+      "selector": "canonical",
+      "givens": "270061004490002006061400208610579800040003607002000000084000301030006005020050780",
+      "steps": 123,
+      "digest": "4f724c2073a5880b66174a43a42b6686ba3ede082f940f1569bead4cb21e340e"
+    },
+    {
+      "seed": "golden:1",
+      "difficulty": "hard",
+      "selector": "random",
+      "givens": "270061004490002006061400208610579800040003607002000000084000301030006005020050780",
+      "steps": 69,
+      "digest": "427c1a41f1ed479208d7187ec9875138977f74cb22669cb3226d10e22fefebc8"
+    },
+    {
+      "seed": "golden:1",
+      "difficulty": "jev",
+      "selector": "canonical",
+      "givens": "270061004490002006061400208610579800040003607002000000084000301030006005020050780",
+      "steps": 123,
+      "digest": "7d3912e4a197bb696087e4a77ec23c18e8bc2cbfaea6588e33c6cec06c81f2b1"
+    },
+    {
+      "seed": "golden:1",
+      "difficulty": "jev",
+      "selector": "random",
+      "givens": "270061004490002006061400208610579800040003607002000000084000301030006005020050780",
+      "steps": 78,
+      "digest": "9ce6a83bb302bbef7e72e7de5b6c45b997b4810cb181a4b3274c1b606bbd3e2c"
+    },
+    {
+      "seed": "golden:2",
+      "difficulty": "easy",
+      "selector": "canonical",
+      "givens": "008090006065287940030061070006030120300009005000402039600000397409100200000026001",
+      "steps": 45,
+      "digest": "731397ef56c0028f94a06e88e075b3eb49b92e3e0dae03ce3001b259e4f08038"
+    },
+    {
+      "seed": "golden:2",
+      "difficulty": "easy",
+      "selector": "random",
+      "givens": "008090006065287940030061070006030120300009005000402039600000397409100200000026001",
+      "steps": 45,
+      "digest": "7c85fd05f7c7ef6bbe3084313efee02bf245ff2b55c793fcf79b5cde0b5748c1"
+    },
+    {
+      "seed": "golden:2",
+      "difficulty": "normal",
+      "selector": "canonical",
+      "givens": "008090006065287940030061070006030120300009005000402039600000397409100200000026001",
+      "steps": 67,
+      "digest": "8f464add5fda45b5416cfa293623e4e25fd38f7c0c8a489974e118dc1d51e119"
+    },
+    {
+      "seed": "golden:2",
+      "difficulty": "normal",
+      "selector": "random",
+      "givens": "008090006065287940030061070006030120300009005000402039600000397409100200000026001",
+      "steps": 51,
+      "digest": "113db4a50d96aa3582e63f679310c117cb353e3d992cb89a502817793cb5564f"
+    },
+    {
+      "seed": "golden:2",
+      "difficulty": "hard",
+      "selector": "canonical",
+      "givens": "008090006065287940030061070006030120300009005000402039600000397409100200000026001",
+      "steps": 121,
+      "digest": "c8fc2091a12203f9b18b8b00bd2bb2257b862215739dba91fa9801b4f80839db"
+    },
+    {
+      "seed": "golden:2",
+      "difficulty": "hard",
+      "selector": "random",
+      "givens": "008090006065287940030061070006030120300009005000402039600000397409100200000026001",
+      "steps": 60,
+      "digest": "aa9b279612544317b8e77eaa880508af928b0eb390dc05d7779769b753efeff8"
+    },
+    {
+      "seed": "golden:2",
+      "difficulty": "jev",
+      "selector": "canonical",
+      "givens": "008090006065287940030061070006030120300009005000402039600000397409100200000026001",
+      "steps": 121,
+      "digest": "d4f5a336e42668a2a969a752b991072a476cc41bc61544d4c1ddfcb3947282e9"
+    },
+    {
+      "seed": "golden:2",
+      "difficulty": "jev",
+      "selector": "random",
+      "givens": "008090006065287940030061070006030120300009005000402039600000397409100200000026001",
+      "steps": 67,
+      "digest": "240f782787f35d9ed8835f78dbcbd1b16caa9464eee21405acdf991f69b1251a"
+    },
+    {
+      "seed": "golden:3",
+      "difficulty": "easy",
+      "selector": "canonical",
+      "givens": "021007000008010207500206901980600300703004602016002890009078023807000106200000000",
+      "steps": 45,
+      "digest": "18de0c78649ec236a209e6435e05736e79759726f620d5f331b352d01e900578"
+    },
+    {
+      "seed": "golden:3",
+      "difficulty": "easy",
+      "selector": "random",
+      "givens": "021007000008010207500206901980600300703004602016002890009078023807000106200000000",
+      "steps": 45,
+      "digest": "13e68751932544d725ecc540080e6dc16e3e939174ef7aa8ca28d14ab7c9aa9c"
+    },
+    {
+      "seed": "golden:3",
+      "difficulty": "normal",
+      "selector": "canonical",
+      "givens": "021007000008010207500206901980600300703004602016002890009078023807000106200000000",
+      "steps": 64,
+      "digest": "a12462322c7ec1574b4382e6f1a93b727189a082fa7069728bdd98834adc22aa"
+    },
+    {
+      "seed": "golden:3",
+      "difficulty": "normal",
+      "selector": "random",
+      "givens": "021007000008010207500206901980600300703004602016002890009078023807000106200000000",
+      "steps": 51,
+      "digest": "2feb1dbdb248453c88f4d7da2a7c6c1403aa714180eea161593d190fc3baaaac"
+    },
+    {
+      "seed": "golden:3",
+      "difficulty": "hard",
+      "selector": "canonical",
+      "givens": "021007000008010207500206901980600300703004602016002890009078023807000106200000000",
+      "steps": 140,
+      "digest": "a274e518cef5c3568279593b7c4cd5573ca7778910b0730913320d9c7327c7ba"
+    },
+    {
+      "seed": "golden:3",
+      "difficulty": "hard",
+      "selector": "random",
+      "givens": "021007000008010207500206901980600300703004602016002890009078023807000106200000000",
+      "steps": 75,
+      "digest": "06a8ffe8c35a551ad894fbc67af25334b7b41a0e39132ca71ee7dab1276766ac"
+    },
+    {
+      "seed": "golden:3",
+      "difficulty": "jev",
+      "selector": "canonical",
+      "givens": "021007000008010207500206901980600300703004602016002890009078023807000106200000000",
+      "steps": 140,
+      "digest": "cbdc76e23bcc7f49837146d9b2e9021106d1a02f76927b7a4440fbb9ca04c2b6"
+    },
+    {
+      "seed": "golden:3",
+      "difficulty": "jev",
+      "selector": "random",
+      "givens": "021007000008010207500206901980600300703004602016002890009078023807000106200000000",
+      "steps": 77,
+      "digest": "5bf47ca82877146144dfdf79cef96534b92cdad16635a8eea7b5689df2a27528"
+    }
+  ]
+}

@@ -10,12 +10,12 @@ let stateReceived=performance.now(),report=null,telemetry=[],focusStart=performa
 let local=null,localEvents=[],localInitial=null,localTimer=null,localStarted=0,replay=null,replayMode=false,reportMatchId=null;
 const storage={get:(key,fallback=null)=>{try{const value=localStorage.getItem(key);return value===null?fallback:JSON.parse(value);}catch{return fallback;}},set:(key,value)=>{try{localStorage.setItem(key,JSON.stringify(value));}catch{}},remove:key=>{try{localStorage.removeItem(key);}catch{}}};
 function notice(text,error=false){$('notice').hidden=!text;$('notice').textContent=text||'';if(error)$('live-announcement').textContent=text;}
-const messages={discord_not_configured:'Discord sign-in is not configured on this host. Practice remains available.',ranked_requires_jev:'Ranked games require a configured live JEV service.',discord_login_required:'Sign in with Discord to start an official daily attempt.',
+const messages={evidence_too_large:'Full candidate evidence is too large for this view; use the replay download.',discord_not_configured:'Discord sign-in is not configured on this host. Practice remains available.',ranked_requires_jev:'Ranked games require a configured live JEV service.',discord_login_required:'Sign in with Discord to start an official daily attempt.',
  daily_challenge_not_published:'The operator has not published today’s challenge for this difficulty.',official_attempt_already_used:'Your official attempt for this difficulty and UTC day has already been used.',
  local_conflict:'That digit conflicts with a row, column, or box.',immutable_clue:'Starting clues cannot be changed.',no_change:'That cell already has this value.',nothing_to_undo:'There is nothing to undo.',
  stale_human_revision:'The board changed in another tab. Your latest server board has been restored.',fresh_discord_context_required:'Open a fresh personal link from /jev sudoku in the relevant Discord channel.',
  csrf_rejected:'Your session changed. Reload the page before making another move.',match_not_running:'This attempt is no longer running.',human_finished:'Your attempt is already complete or expired.',
- new_game_rate_limit:'The practice creation limit has been reached. Continue your current game or retry after the hourly window.',
+ opponent_syncing:'The opponent is catching up with the clock. Try that move again in a moment.',new_game_rate_limit:'The practice creation limit has been reached. Continue your current game or retry after the hourly window.',
  launch_wrong_user:'This launch link belongs to another Discord user. Run /jev sudoku yourself.',
  launch_already_used_or_expired:'This personal launch link is expired or already used. Run /jev sudoku again.'};
 function friendly(e){return messages[e.message]||e.message?.replaceAll('_',' ')||'The request could not be completed.';}
@@ -78,10 +78,22 @@ function render(){
   if(p?.opponent==='Heuristic fallback')notice('JEV is unavailable. This game is continuing against the heuristic and will not count toward ranked results.');
 }
 function acceptState(p){if(replayMode)return;if(current&&current.id===p.id&&p.sequence<current.sequence)return;current=p;stateReceived=performance.now();storage.set('jev-current',p.id);if(p.givens)storage.set('jev-practice-copy',{givens:p.givens,human:p.human?.values,difficulty:p.config.difficulty});render();}
-function connectStream(id){stream?.close();stream=bearer?activity.bearerEventSource(`/api/matches/${id}/events`,bearer):new EventSource(`/api/matches/${id}/events`);let opened=false;
-  stream.addEventListener('state',e=>{try{if(!local)acceptState(JSON.parse(e.data));}catch{notice('An invalid live update was ignored. Reload to resynchronize.');}});
-  stream.onopen=()=>{$('connection-label').textContent='Connected';$('offline-button').hidden=true;if(opened)record('reconnect');opened=true;};
-  stream.onerror=()=>{if(local)return;$('connection-label').textContent='Reconnecting';$('offline-button').hidden=!current?.givens;};
+// The Worker keeps no connection open: the game reads authoritative state by polling. Every poll also lets the server apply
+// any opponent step that has become due, so polling is what advances the race between requests.
+let pollTimer=null,pollToken=0;
+function connectStream(id){
+  stream?.close();const token=++pollToken;let failures=0,opened=false;
+  stream={close:()=>{pollToken++;clearTimeout(pollTimer);}};
+  const tick=async()=>{
+    if(token!==pollToken||local)return;
+    try{
+      const p=await api(`/api/matches/${id}`);if(token!==pollToken)return;acceptState(p);
+      if(!opened||failures){$('connection-label').textContent='Connected';$('offline-button').hidden=true;if(failures)record('reconnect');}
+      opened=true;failures=0;if(p.phase==='finished')return;
+    }catch(e){failures++;$('connection-label').textContent='Reconnecting';$('offline-button').hidden=!current?.givens;if(e.status===403||e.status===404)return;}
+    pollTimer=setTimeout(tick,document.hidden?4000:failures?Math.min(8000,1000*2**failures):1000);
+  };
+  pollTimer=setTimeout(tick,1000);
 }
 async function resume(id){const p=await api(`/api/matches/${id}`);reportMatchId=id;notes=storage.get(`jev-notes:${id}`,Array(81).fill(0));if(!Array.isArray(notes)||notes.length!==81)notes=Array(81).fill(0);acceptState(p);
   if(p.phase==='ready'){acceptState(await api(`/api/matches/${id}/start`,{method:'POST',body:{}}));}connectStream(id);
@@ -104,7 +116,10 @@ async function perform(action,method='keyboard'){
   record('input_method',{method});busy=true;const started=performance.now();render();
   try{
     if(local)localApply({type:'human',action});else{
-      const p=await api(`/api/matches/${current.id}/actions`,{method:'POST',body:{requestId:uuid(),expectedHumanRevision:current.human.revision,action}});acceptState(p);
+      const requestId=uuid();let p;
+      // The same requestId is reused, so a retry after 'opponent_syncing' can never apply the move twice.
+      for(let attempt=0;;attempt++){try{p=await api(`/api/matches/${current.id}/actions`,{method:'POST',body:{requestId,expectedHumanRevision:current.human.revision,action}});break;}catch(e){if(e.message==='opponent_syncing'&&attempt<8){await new Promise(r=>setTimeout(r,700));continue;}throw e;}}
+      acceptState(p);
       record('action_rtt',{durationMs:Math.min(120000,performance.now()-started)});
     }
     if(action.kind==='set'){notes[action.cell]=0;saveNotes();}notice('');
@@ -117,8 +132,10 @@ function digit(d,method='keyboard'){if(!current||replayMode||!['running','settli
 function toggleNotes(){noteMode=!noteMode;$('notes').setAttribute('aria-pressed',String(noteMode));updateSelection();}
 function showView(view){currentView=view;for(const panel of document.querySelectorAll('.view'))panel.hidden=panel.id!==`view-${view}`;for(const button of document.querySelectorAll('[data-view]'))button.classList.toggle('active',button.dataset.view===view);
   if(view==='analytics'){record('analysis_opened');loadAnalytics();}if(view==='leaderboards')loadLeaderboard();if(view==='profile')loadProfile();}
-async function loadAnalytics(){try{if(local){report=analyzeMatch(localInitial,localEvents,[],{elapsedMs:elapsed()});}else if(reportMatchId||current?.id)report=await api(`/api/matches/${reportMatchId||current.id}/analytics`);else report=null;renderMatchAnalytics($('analytics-content'),report);}catch(e){$('analytics-content').replaceChildren(el('div','empty-state',friendly(e)));}}
+// On-screen views omit the per-decision candidate evidence (about a megabyte for a long game); the JSON download asks for all of it.
+async function loadAnalytics(full=false){try{if(full&&!local&&(reportMatchId||current?.id)){try{report=await api(`/api/matches/${reportMatchId||current.id}/analytics`);renderMatchAnalytics($('analytics-content'),report);return;}catch(e){if(e.message!=='evidence_too_large')throw e;full=false;notice('This game is too long for the full candidate evidence in the summary. It is included in the replay download.');}}if(local){report=analyzeMatch(localInitial,localEvents,[],{elapsedMs:elapsed()});}else if(reportMatchId||current?.id)report=await api(`/api/matches/${reportMatchId||current.id}/analytics${full?'':'?evidence=omit'}`);else report=null;renderMatchAnalytics($('analytics-content'),report);}catch(e){$('analytics-content').replaceChildren(el('div','empty-state',friendly(e)));}}
 function download(name,content,type='application/json'){const blob=new Blob([content],{type}),url=URL.createObjectURL(blob),a=el('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);}
+async function exportAll(){let offset=0,first=null;const matches=[];for(;;){const page=await api(`/api/me/export?offset=${offset}`);first||=page;matches.push(...page.matches);if(page.nextOffset===null)break;offset=page.nextOffset;}return {exportVersion:first.exportVersion,generatedAt:first.generatedAt,matches};}
 async function loadLeaderboard(next=false){try{const p=new URLSearchParams({scope:$('leaderboard-scope').value,date:$('leaderboard-date').value,difficulty:$('leaderboard-difficulty').value});if(next&&leaderboardCursor)p.set('cursor',leaderboardCursor);
   const data=await api(`/api/leaderboard?${p}`);leaderboardCursor=data.nextCursor;$('leaderboard-next').hidden=!leaderboardCursor;
   $('leaderboard-content').replaceChildren(data.entries.length?table(['Rank','Player','Human time','Race winner'],data.entries.map(r=>[r.rank,r.display_name,time(r.seconds*1000),r.winner==='human'?'Human':r.winner==='jev'?'JEV':'Draw'])):el('div','empty-state',data.published?'No eligible completions yet.':'No challenge has been published for this date and difficulty.'));
@@ -190,11 +207,11 @@ $('analysis-button').addEventListener('click',()=>{reportMatchId=current?.id;sho
 for(const id of ['rules-button','rules-footer'])$(id).addEventListener('click',()=>{$('rules-dialog').showModal();record('rules_opened');});$('close-rules').addEventListener('click',()=>$('rules-dialog').close());
 $('reveal').addEventListener('click',async()=>{if(!confirm('Reveal the opponent’s answers? This irreversibly makes the official attempt practice.'))return;try{acceptState(await api(`/api/matches/${current.id}/reveal`,{method:'POST',body:{}}));notice('Answers revealed. This attempt is now unranked practice.');}catch(e){notice(friendly(e));}});
 $('load-leaderboard').addEventListener('click',()=>loadLeaderboard(false));$('leaderboard-next').addEventListener('click',()=>loadLeaderboard(true));
-$('export-json').addEventListener('click',async()=>{await loadAnalytics();if(report){record('export_requested',{format:'json'});download(`sudoku-analytics-${current?.id||'match'}.json`,JSON.stringify(report,null,2));}});
+$('export-json').addEventListener('click',async()=>{await loadAnalytics(true);if(report){record('export_requested',{format:'json'});download(`sudoku-analytics-${current?.id||'match'}.json`,JSON.stringify(report,null,2));}});
 $('export-csv').addEventListener('click',async()=>{await loadAnalytics();if(report){record('export_requested',{format:'csv'});download('sudoku-decision-analytics.csv',toCsv(report.jev.decisions,['sequence','ms','source','model','kind','technique','candidates','confidence','entropyBits','topTwoMargin','inferenceMs','preprocessingMs','pacingWaitMs','branchDepth']),'text/csv');}});
 $('telemetry-consent').addEventListener('change',async e=>{try{const data=await api('/api/privacy',{method:'POST',body:{telemetryConsent:e.target.checked}});me.telemetryConsent=data.telemetryConsent;if(!data.telemetryConsent)telemetry=[];}catch(err){e.target.checked=!e.target.checked;notice(friendly(err));}});
 $('logout').addEventListener('click',async()=>{try{await api('/api/logout',{method:'POST',body:{}});location.reload();}catch(e){notice(friendly(e));}});
-$('export-account').addEventListener('click',async()=>{try{download('jev-sudoku-my-data.json',JSON.stringify(await api('/api/me/export'),null,2));}catch(e){notice(friendly(e));}});
+$('export-account').addEventListener('click',async()=>{try{download('jev-sudoku-my-data.json',JSON.stringify(await exportAll(),null,2));}catch(e){notice(friendly(e));}});
 $('delete-account').addEventListener('click',async()=>{const confirmation=prompt('This permanently deletes your stored games, results, and optional telemetry. Type DELETE MY DATA to continue.');if(confirmation!=='DELETE MY DATA')return;
   try{await api('/api/me/data',{method:'DELETE',body:{confirm:confirmation}});storage.remove('jev-current');location.reload();}catch(e){notice(friendly(e));}});
 $('operator-load').addEventListener('click',async()=>{try{renderOperator($('operator-content'),await api('/api/analytics/operator?days=30'));}catch(e){notice(friendly(e));}});

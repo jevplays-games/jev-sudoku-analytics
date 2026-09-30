@@ -10,30 +10,3 @@ export async function signInWithDiscord(api) {
   await sdk.commands.authenticate({access_token:session.accessToken});
   return {token:session.token,csrf:session.csrf,user:session.user};
 }
-// EventSource cannot send an Authorization header, so an Activity reads the live stream with fetch and reconnects itself.
-export function bearerEventSource(url,token) {
-  const listeners=new Map(),controller=new AbortController(),source={onopen:null,onerror:null,close:()=>controller.abort(),addEventListener:(name,fn)=>listeners.set(name,fn)};
-  (async()=>{
-    while(!controller.signal.aborted){
-      try{
-        const response=await fetch(url,{headers:{Authorization:`Bearer ${token}`},cache:'no-store',signal:controller.signal});
-        if(!response.ok||!response.body)throw new Error(`http_${response.status}`);
-        source.onopen?.();
-        const reader=response.body.getReader(),decoder=new TextDecoder();let buffer='';
-        for(;;){
-          const {value,done}=await reader.read();if(done)break;
-          buffer+=decoder.decode(value,{stream:true}).replace(/\r\n/g,'\n');
-          let end;while((end=buffer.indexOf('\n\n'))>=0){
-            const block=buffer.slice(0,end);buffer=buffer.slice(end+2);
-            let name='message';const data=[];
-            for(const line of block.split('\n')){if(line.startsWith('event:'))name=line.slice(6).trim();else if(line.startsWith('data:'))data.push(line.slice(5).replace(/^ /,''));}
-            if(data.length)listeners.get(name)?.({data:data.join('\n')});
-          }
-        }
-      }catch{if(controller.signal.aborted)return;}
-      source.onerror?.();
-      await new Promise(resolve=>setTimeout(resolve,3000));
-    }
-  })();
-  return source;
-}

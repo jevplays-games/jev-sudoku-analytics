@@ -1,0 +1,14 @@
+{
+  "suite": "Isolated CLI and SQLite maintenance smoke",
+  "generatedAt": "2026-09-30T13:32:37.101Z",
+  "passed": 5,
+  "failed": 0,
+  "checks": [
+    "Four unique daily puzzles published locally; repeat publication does not overwrite; wrangler-ready SQL emitted without touching a database",
+    "Finished-match JSON, decision CSV and operator JSON CLI exports",
+    "Expired optional telemetry purged by the lazy sweep; core game and verified result retained",
+    "Consistent backup reopened and checked; overwrite refused",
+    "Live test database integrity and foreign-key checks pass"
+  ],
+  "limitations": "Temporary local fixture database only. Cloudflare D1, wrangler, remote backups and live restoration were not exercised."
+}

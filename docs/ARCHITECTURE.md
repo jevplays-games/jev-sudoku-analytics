@@ -1,20 +1,21 @@
 # Architecture and API
 
-This document describes the shipped code, rather than an aspirational later platform. The original planning brief is preserved separately in `source-prompt.md`.
+This document describes the shipped code, rather than an aspirational later platform. The original planning brief is preserved separately in `source-prompt.md`. The game runs as a Cloudflare Worker with D1; [WORKERS.md](WORKERS.md) explains how the match lifecycle works without timers or a long-lived process, and records the CPU and query measurements.
 
 ## Runtime and trust
 
 ```mermaid
 flowchart LR
     Human --> UI[Vanilla single-page UI]
-    UI -->|JSON actions + CSRF| API[Node HTTP API]
-    API -->|Redacted SSE snapshots| UI
-    API --> Match[Authoritative match coordinator]
+    UI -->|JSON actions + CSRF| API[Worker handle request env ctx]
+    UI -->|1 s polls| API
+    API -->|Redacted state| UI
+    API --> Match[Authoritative match lifecycle: lazy advance]
     Match --> Rules[Shared deterministic Sudoku engine]
     Match --> Adapter[Validated JEV Choice adapter]
     Adapter --> TypeSafe[TypeSafe API]
     API --> Discord[Discord OAuth and signed interactions]
-    Match --> DB[(SQLite WAL)]
+    Match --> DB[(D1 / SQLite)]
     API --> Reports[Analytics and scoped rankings]
     Reports --> DB
     Rules --> Replay[Replay reconstruction]
@@ -39,11 +40,11 @@ There is no generic score-submission API, public arbitrary model proxy, query-pa
 
 ## Rules and state
 
-`shared/sudoku.js` defines 81-cell row-major boards, all 27 units, candidate masks, immutable clues, human transitions, consistency and completion. The exact uniqueness solver is used for puzzle generation and testing, not to supply JEV's answers.
+`public/shared/sudoku.js` defines 81-cell row-major boards, all 27 units, candidate masks, immutable clues, human transitions, consistency and completion. The exact uniqueness solver is used for puzzle generation and testing, not to supply JEV's answers.
 
-`shared/match.js` adds phase, elapsed milliseconds, sequential revisions, outcome, configuration and eligibility. Human state owns values/undo/revision/finish. JEV state separately owns values/eliminations/branches/revision/status/last action time.
+`public/shared/match.js` adds phase, elapsed milliseconds, sequential revisions, outcome, configuration and eligibility. Human state owns values/undo/revision/finish. JEV state separately owns values/eliminations/branches/revision/status/last action time.
 
-Events include `start`, `human`, `jev`, `jev_stalled`, `eligibility`, `settle`, `timeout`, and `void`. Functions receive timestamps; the pure engine does not read wall clocks or the DOM. A pending reservation expires after five minutes or at its daily challenge boundary. Expiration releases capacity without providing another official attempt for the same challenge.
+Events include `start`, `human`, `jev`, `jev_stalled`, `eligibility`, `settle`, `timeout`, and `void`. Functions receive timestamps; the pure engine does not read wall clocks or the DOM. A pending reservation expires after five minutes or at its daily challenge boundary. Expiration releases capacity without providing another official attempt for the same challenge. A running attempt that its owner has not touched for `ABANDONED_AFTER_MS` is voided. Opponent events are stamped with their scheduled time, and the events are applied lazily when a request touches the match ([WORKERS.md](WORKERS.md)).
 
 `ready → running → settling → finished` is the normal human-first path. A JEV finish leaves the human running. Same-second completions tie. The server closes the human finish bucket before applying a later opponent step. A profile without a deduction becomes stalled rather than inventing a move.
 
@@ -106,7 +107,7 @@ Browser mutations use `application/json`, a same-origin `Origin`, the HttpOnly s
 
 | Route | Contract |
 |---|---|
-| `GET /healthz` | Health/draining status; no secrets. |
+| `GET /api/health` | Liveness; no secrets. |
 | `GET /api/me` | Issue/resume guest session; return identity, CSRF, capabilities, context, active match and consent. |
 | `GET /api/auth/discord` | Begin authorization-code OAuth. |
 | `GET /api/auth/discord/callback` | Validate state, exchange code, fetch identity, rotate session. |
@@ -116,28 +117,28 @@ Browser mutations use `application/json`, a same-origin `Origin`, the HttpOnly s
 | `POST /api/matches` | `{requestId,difficulty,mode}`; reserve server-selected puzzle. Givens are withheld until start. |
 | `POST /api/matches/:id/start` | `{}`; start owner match and return first board snapshot. |
 | `POST /api/matches/:id/actions` | `{requestId,expectedHumanRevision,action}`; validate and record owner edit. |
-| `GET /api/matches/:id` | Owner-only public snapshot/resynchronization. |
-| `GET /api/matches/:id/events` | Owner-only SSE state snapshots, with IDs and heartbeat; reconnect gives current state, not an unbounded replay queue. |
+| `GET /api/matches/:id` | Owner-only public snapshot. This is the poll: it also applies any opponent step that has become due (bounded per request). |
+| `GET /api/matches/:id/events` | Removed: `410 events_removed_use_polling`. |
 | `POST /api/matches/:id/reveal` | `{}`; irreversible practice downgrade before revealing answers. |
-| `GET /api/matches/:id/analytics` | Owner authorized report; optional `format=csv`; live ranked redaction. |
-| `GET /api/matches/:id/replay` | Owner-only completed replay. |
+| `GET /api/matches/:id/analytics` | Owner authorized report; optional `format=csv`; `evidence=omit` drops per-decision candidate evidence; full evidence above 350 KB is `413 evidence_too_large` (use the replay); live ranked redaction. |
+| `GET /api/matches/:id/replay` | Owner-only completed replay, served as the stored events verbatim. |
 | `POST /api/matches/:id/telemetry` | `{events:[{id,name,properties}]}`; opt-in required; max50 bounded observations per batch. |
 | `GET /api/leaderboard` | `scope,date,difficulty,limit,cursor`; World public, community scope authorized. |
 | `GET /api/analytics/me` | Most recent200 owned matches with coverage-labeled aggregates. |
-| `GET /api/analytics/operator` | Authorized aggregate; `days`1–365 and optional difficulty. |
-| `POST /api/privacy` | `{telemetryConsent:boolean}`; disabling deletes owned optional observations and recomputes snapshots. |
-| `GET /api/me/export` | Owned state, authorized analytics, completed replays; no keys or live hidden answers. |
+| `GET /api/analytics/operator` | Authorized aggregate; `days`1–365 and optional difficulty; cached five minutes (`fresh=1` bypasses). |
+| `POST /api/privacy` | `{telemetryConsent:boolean}`; disabling deletes owned optional observations; reports rebuild from what remains when read. |
+| `GET /api/me/export` | Owned state, authorized analytics, completed replays; no keys or live hidden answers. Paged: `offset`, `limit`; follow `nextOffset`. |
 | `DELETE /api/me/data` | `{confirm:"DELETE MY DATA"}`; delete owned records; bounded keyed attempt marker exception. |
 
 Human actions are `{kind:"set",cell,digit}`, `{kind:"clear",cell}`, `{kind:"undo"}`, or `{kind:"forfeit"}`. The server derives undo data. Unknown action/request keys are rejected; user-supplied score/time fields are not accepted. Duplicate request IDs are idempotent. Human revision changes are independent of opponent revision changes.
 
-Typical errors: 400 malformed JSON, 401 session/login required, 403 ownership/CSRF/context, 409 stale revision/attempt conflict, 413 body too large, 415 content type, 422 invalid input, 429 limits, 503 unavailable capacity/provider configuration.
+Typical errors: 400 malformed JSON, 401 session/login required, 403 ownership/CSRF/context, 409 stale revision/attempt conflict, 413 body too large, 415 content type, 422 invalid input, 429 limits, 503 unavailable capacity/provider configuration. `409 opponent_syncing` means an opponent step that was already due has not been applied yet; retry the same request id.
 
 ## Persistence and result verification
 
-`db/schema.sql` is the complete versioned schema. The nine tables are users, sessions, security_tokens, challenges, matches, match_events, results, telemetry and operations. IDs that originate from Discord remain strings.
+`migrations/*.sql` is the versioned schema (applied by `wrangler d1 migrations apply` on Cloudflare and on open by the local adapter). Tables: users, sessions, security_tokens, challenges, puzzle_pool, matches, match_events, pending_decisions, results, telemetry, operations, quotas, meta and report_cache. IDs that originate from Discord remain strings.
 
-Match event insertion and state snapshot update share a SQLite transaction. Result finalization then replays the entire event stream, checks the state hash chain and pins, and inserts an idempotent result. Crash recovery repairs missing final results; active interrupted matches become void rather than claiming uninterrupted timing. SQLite WAL uses a persistent local filesystem, not a network-shared volume.
+Each event append is one atomic D1 batch guarded by `matches.revision` (compare-and-swap): the event row, the state snapshot, its hashes and the hash chain move together. Result finalization re-checks the state hash, event count and (for ranked) the decision sources, then inserts an idempotent result whose replay hash is the event-chain head. A finished match whose result write failed is retried by the lazy sweep. Active matches nobody touches are voided rather than claiming uninterrupted timing. There is no replay re-simulation inside a request; see [WORKERS.md](WORKERS.md) for why per-append verification replaces it and how to run the full independent replay.
 
 ```mermaid
 flowchart LR
@@ -152,14 +153,15 @@ Leaderboard rank is based on the human completion's elapsed one-second bucket, i
 
 ## Files and dependencies
 
-- `public/`: semantic HTML, CSS, game controller and analytics renderer; no framework or build step.
-- `shared/`: pure mechanics, technique policy, match transitions, replay, metric derivation.
-- `server/`: HTTP/session/security, OAuth/context, authoritative scheduler, provider adapter, persistence/reporting.
-- `scripts/`: deterministic unique puzzle generation, publishing, benchmarks, command registration, reports and maintenance.
-- `tests/`: dependency-free Node tests. Browser smoke uses optional Python Playwright.
-- `deploy/`: reverse proxy and systemd templates; Dockerfile/Compose live at root.
+- `public/`: semantic HTML, CSS, game controller and analytics renderer; no framework or build step. `public/shared/` holds the pure code (mechanics, technique policy, match transitions, replay, metric derivation) imported by both the browser and the Worker.
+- `server/`: `worker.js` (routing, headers), `matches.js` (lifecycle, lazy advance, leases, verification), `jev.js` (provider adapter), `auth.js`/`security.js` (Discord, sessions, CSRF), `reports.js`, `maintenance.js`, `puzzles.js`, `db.js` (D1 helpers, quota reservations), `config.js`. Web APIs only.
+- `local/`: the Node adapter (`server.js`) and the node:sqlite-backed D1-compatible `database.js`.
+- `migrations/`: D1 schema and the practice puzzle pool.
+- `scripts/`: puzzle publishing, pool/golden generation, benchmarks, command registration, reports and local-database maintenance.
+- `tests/`: dependency-free Node tests over real SQLite. Browser smoke uses optional Python Playwright.
+- `wrangler.jsonc`: the Cloudflare deployment.
 
-Node provides HTTP, crypto, fetch, SQLite, testing and file access. There are zero npm dependencies. The optional Python test dependency and infrastructure images are not loaded in the browser. Modules are shared where reuse is immediate; no generalized multi-game plugin platform is invented.
+The Worker uses no Node built-ins and there are zero npm dependencies. Modules are shared where reuse is immediate; no generalized multi-game plugin platform is invented.
 
 ## Deliberate release choices
 
@@ -167,4 +169,4 @@ Offline continuation operates only after loading the application and creates a s
 
 Prepared unique daily puzzles are not overwritten. Advanced logical techniques exist, but the two-family smoke benchmark does not calibrate human difficulty or establish which profile is faster. Stronger techniques can consume more paced elementary actions.
 
-Public replay hosting, cross-puzzle Elo, billing integration, distributed scheduling, bot Gateway connections, ad tracking, push notifications and cross-game orchestration are intentionally absent.
+Public replay hosting, cross-puzzle Elo, billing integration, background schedulers, bot Gateway connections, ad tracking, push notifications and cross-game orchestration are intentionally absent.

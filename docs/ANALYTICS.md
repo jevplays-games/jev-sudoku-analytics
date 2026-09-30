@@ -94,9 +94,9 @@ Move intervals include thought, idle time, network transit, and input behavior. 
 | `confidence` | Distribution of provider-returned concentration/confidence values where present. |
 | `entropyBits` | `−sum(p log2 p)` for each returned candidate distribution. |
 | `topTwoMargin` | Highest probability minus second highest; 1 for a singleton distribution. |
-| `preprocessingMs` | Candidate/feature generation time recorded by the scheduler. |
+| `preprocessingMs` | Candidate/feature generation time measured by the runtime. On Cloudflare Workers `performance.now()` does not advance during pure computation, so this reads about 0 in production; locally it is real. |
 | `inferenceMs` | Adapter-level selection latency, potentially including retry handling. |
-| `pacingWaitMs` | Time a completed decision waited before application. |
+| `pacingWaitMs` | Time a completed decision waited before application, measured against the scheduled (stamped) application time. |
 
 Model confidence, candidate probability, entropy and margin are **not calibrated probabilities of Sudoku correctness**. Validity comes from deterministic proof regeneration and legal transition checks. The engine supplies permitted deductions, and JEV chooses among them; this evaluates policy selection inside a hybrid solver, not unconstrained neural Sudoku solving.
 
@@ -160,7 +160,7 @@ Win rate uses `wins / validFinished`; completion rate uses completed valid finis
 - **Funnel:** reserved, started, firstAction, finished, completed, rankedVerified. This counts matches reserved in the chosen creation-time window, not unique people. Expired reservations may finish void without ever starting; funnel stages are descriptive counts, not a guaranteed nested conversion sequence.
 - **Activity:** authenticated DAU/WAU/MAU are unique users with started matches in rolling 1/7/30-day windows, from start-time queries rather than reservation-time queries. Insufficient requested window length returns `null` for longer metrics. Guest sessions are distinct session identifiers, not unique humans. UTC daily active rows are also supplied.
 - **Retention:** first observed started-match UTC date defines cohort membership. D1/D7/D30 use an exact return day, not “on or after.” Only fully elapsed target days enter the denominator. Reports include cohort sizes, eligible/returned counts and rates. Retention includes all difficulties even when other report sections are filtered.
-- **Routes:** normalized method/path, request count, 5xx, 4xx, 429, and latency distribution. Dynamic match IDs and query strings are not retained as route labels. SSE connection lifetime is excluded.
+- **Routes:** normalized method/path, request count, 5xx, 4xx, 429, and latency distribution. Dynamic match IDs and query strings are not retained as route labels. Opponent-state polls (`GET /api/matches/:id`) are not logged, and the latency percentiles use at most the most recent 1,000 logged requests in the window (`coverage.httpMetricsSampled` says when that happened).
 - **Security/reliability:** selected rejection, verification failure and scheduler error event counts.
 
 Deleting accounts or purging operational history changes available history. No synthetic DAU, extrapolated retention, or fabricated revenue is generated to fill missing data.
@@ -178,12 +178,19 @@ npm run analytics -- --match MATCH_ID --format csv --out reports/decisions.csv
 
 CLI detailed match exports require a finished attempt so operators do not accidentally reveal live ranked answers. Authorized owner API reports may be live but remain redacted.
 
-Default retention: raw optional browser events and operational HTTP/security observations expire after **30 days when the maintenance purge runs**. These are configurable. No scheduler is silently installed; arrange `npm run maintenance -- --purge` with your deployment's scheduler. Expiry is not automatic merely because a setting exists.
+Default retention: raw optional browser events and operational HTTP/security observations expire after **30 days**. These are configurable (`TELEMETRY_RETENTION_DAYS`, `OPERATIONS_RETENTION_DAYS`). On Cloudflare there are no cron triggers to spare, so expiry runs **lazily**: light requests occasionally run one small bounded sweep (at most once a minute) that deletes a few hundred expired rows at a time. A quiet site purges nothing until traffic returns, and a large backlog clears over several sweeps. `npm run maintenance -- --sweep` runs the same sweep against a local database.
 
-Core replay, provider request usage, results and identity records persist until account deletion or operator action. The purge recomputes affected result reports from retained evidence to remove expired browser aggregates as well as raw rows. Disabling optional consent deletes the user's stored optional observations and recomputes saved summaries. Per-session collection consent is not an account-wide synchronization mechanism; other sessions have their own opt-in setting.
+Core replay, provider request usage, results and identity records persist until account deletion or operator action. Full analytics reports are not cached: they are rebuilt from the retained events and telemetry whenever they are read, so expired or withdrawn browser observations disappear from reports automatically. The stored per-result summary (outcome, eligibility, times, provider request and token totals) contains no browser observations. Disabling optional consent deletes the user's stored optional observations. Per-session collection consent is not an account-wide synchronization mechanism; other sessions have their own opt-in setting.
 
 Account export includes owned public state, authorized analytics and completed replay files. Deletion removes owned games, results, telemetry and associated identity/session records. A keyed, non-public daily-attempt tombstone without direct user ID survives only until that challenge's UTC day ends, preventing account deletion from granting another official attempt. Backup copies follow the operator's separately managed deletion/retention policy.
 
 ## 11. Deliberate non-metrics
 
 No IQ/cognitive diagnosis, covert fingerprint, hidden-solution error count, cheating probability, calibrated model correctness probability, normalized cross-puzzle skill score, or billing invoice is inferred. The data is suitable for gameplay inspection and engineering analysis, not those conclusions.
+
+## 12. Workers-era notes
+
+- **Candidate evidence.** `jev.decisions[].candidateEvidence` is large (about 10 KB per decision). `GET /api/matches/:id/analytics?evidence=omit` returns the same report with `candidateEvidence: null`; the default form is refused with `413 evidence_too_large` above 350 KB of stored events, and the replay download always contains the complete evidence.
+- **Stored summaries.** Operator and personal aggregates read a small per-result summary (dimensions, outcome, eligibility, times, action count, provider request/token totals) rather than parsing full reports. Matches still in progress contribute state-derived counts and zero provider usage.
+- **Operator report bounds.** Result summaries are capped at 1,000 rows per report (`coverage.rowCap`, `summariesTruncated`) and the report is cached for five minutes.
+- **Scheduling stamps.** Opponent event times are their scheduled times; see [WORKERS.md](WORKERS.md).

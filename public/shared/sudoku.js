@@ -2,7 +2,7 @@
 export const RULES_VERSION = 'sudoku-v1';
 export const ALL = 0x1ff;
 export const bit = d => 1 << (d - 1);
-export const digits = mask => Array.from({ length: 9 }, (_, i) => i + 1).filter(d => mask & bit(d));
+export const digits = mask => { const out = []; for (let d = 1; d <= 9; d++) if (mask & (1 << (d - 1))) out.push(d); return out; };
 export const popcount = mask => { let n = 0; for (; mask; mask &= mask - 1) n++; return n; };
 export const ROWS = Array.from({ length: 9 }, (_, r) => Array.from({ length: 9 }, (_, c) => r * 9 + c));
 export const COLS = Array.from({ length: 9 }, (_, c) => Array.from({ length: 9 }, (_, r) => r * 9 + c));
@@ -26,9 +26,9 @@ export function parseGivens(input) {
   return [...a];
 }
 export function isConsistent(values) {
-  return UNITS.every(unit => { const seen = new Set(); for (const i of unit) {
-    const d = values[i]; if (d && seen.has(d)) return false; if (d) seen.add(d);
-  } return true; });
+  for (const unit of UNITS) { let seen = 0;
+    for (const i of unit) { const d = values[i]; if (d) { const b = 1 << (d - 1); if (seen & b) return false; seen |= b; } } }
+  return true;
 }
 export function candidateMask(values, cell, eliminated = []) {
   if (values[cell]) return 0;
@@ -40,14 +40,23 @@ export function isSolved(values, givens = Array(81).fill(0)) {
   return Array.isArray(values) && values.length === 81 && values.every((d,i) => Number.isInteger(d) && d >= 1 && d <= 9 && (!givens[i] || givens[i] === d)) &&
     UNITS.every(unit => unit.reduce((mask,i) => mask | bit(values[i]), 0) === ALL);
 }
-export function isContradiction(values, eliminated = []) {
-  if (!isConsistent(values)) return true;
-  const masks = candidateMasks(values, eliminated);
-  if (values.some((d,i) => !d && !masks[i])) return true;
-  return UNITS.some(unit => {
-    let possible = 0; for (const i of unit) possible |= values[i] ? bit(values[i]) : masks[i];
-    return possible !== ALL;
-  });
+// Flat unit table (27 units x 9 cells) so the hot loops below are plain indexed reads.
+const UNIT_TABLE = Int16Array.from(UNITS.flat());
+// `masks` may be supplied when the caller already holds candidateMasks(values, eliminated); the answer is identical.
+// Three conditions make a board contradictory: two equal digits in a unit, an empty cell with no candidate, or a unit whose
+// digits and candidates cannot cover 1-9. One pass over the 27 units checks all three (the result is their OR, so order is irrelevant).
+export function isContradiction(values, eliminated = [], masks = null) {
+  masks ||= candidateMasks(values, eliminated);
+  for (let u = 0, k = 0; u < 27; u++) {
+    let seen = 0, possible = 0;
+    for (let j = 0; j < 9; j++, k++) {
+      const i = UNIT_TABLE[k], d = values[i];
+      if (d) { const b = 1 << (d - 1); if (seen & b) return true; seen |= b; possible |= b; }
+      else { const m = masks[i]; if (!m) return true; possible |= m; }
+    }
+    if (possible !== ALL) return true;
+  }
+  return false;
 }
 export function validateHuman(board, givens, action) {
   invariant(action && typeof action === 'object' && !Array.isArray(action), 'invalid_action');

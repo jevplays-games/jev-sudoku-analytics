@@ -1,0 +1,571 @@
+{
+  "schemaVersion": "request-cpu-v1",
+  "generatedAt": "2026-09-30T13:31:38.575Z",
+  "budgetMs": 10,
+  "node": "v24.18.0",
+  "platform": "win32 x64 AMD Ryzen 9 7950X 16-Core Processor",
+  "method": "App JavaScript time per Worker invocation (handle + waitUntil work) with database time subtracted; fake instant model; Node/V8, not the Workers runtime.",
+  "limits": [
+    "Not measured on Cloudflare: real Workers CPU may differ, especially cold.",
+    "Provider latency and D1 round trips are wall time on Workers and are excluded.",
+    "d1Calls/d1Statements are the maximum D1 API calls and statements one invocation issued (Workers Free allows 50 queries per invocation).",
+    "Timer-based measurements on Workers do not advance during pure computation, so production preprocessingMs fields read as 0."
+  ],
+  "scenarios": [
+    {
+      "scenario": "GET /api/me (new session)",
+      "runs": 29,
+      "appCpuMs": {
+        "median": 0.17,
+        "p95": 0.3,
+        "max": 0.34
+      },
+      "coldFirstCallMs": 0.48,
+      "dbMsMedian": 0.17,
+      "d1Calls": 4,
+      "d1Statements": 4,
+      "withinBudget": true,
+      "coldWithinBudget": true
+    },
+    {
+      "scenario": "GET / (worker-first document)",
+      "runs": 29,
+      "appCpuMs": {
+        "median": 0.8,
+        "p95": 1.08,
+        "max": 1.23
+      },
+      "coldFirstCallMs": 1.94,
+      "dbMsMedian": 0,
+      "d1Calls": 0,
+      "d1Statements": 0,
+      "withinBudget": true,
+      "coldWithinBudget": true
+    },
+    {
+      "scenario": "POST /api/matches (practice create, pool puzzle)",
+      "runs": 29,
+      "appCpuMs": {
+        "median": 0.56,
+        "p95": 1.61,
+        "max": 1.67
+      },
+      "coldFirstCallMs": 2.27,
+      "dbMsMedian": 0.49,
+      "d1Calls": 14,
+      "d1Statements": 14,
+      "withinBudget": true,
+      "coldWithinBudget": true
+    },
+    {
+      "scenario": "POST start (easy, model-backed) incl. first decision preparation",
+      "runs": 29,
+      "appCpuMs": {
+        "median": 1.16,
+        "p95": 2.05,
+        "max": 2.09
+      },
+      "coldFirstCallMs": 3.64,
+      "dbMsMedian": 0.59,
+      "d1Calls": 16,
+      "d1Statements": 18,
+      "withinBudget": true,
+      "coldWithinBudget": true
+    },
+    {
+      "scenario": "POST start (normal, model-backed) incl. first decision preparation",
+      "runs": 29,
+      "appCpuMs": {
+        "median": 1.52,
+        "p95": 2.24,
+        "max": 2.29
+      },
+      "coldFirstCallMs": 4.4,
+      "dbMsMedian": 0.59,
+      "d1Calls": 16,
+      "d1Statements": 18,
+      "withinBudget": true,
+      "coldWithinBudget": true
+    },
+    {
+      "scenario": "POST start (hard, model-backed) incl. first decision preparation",
+      "runs": 29,
+      "appCpuMs": {
+        "median": 2.64,
+        "p95": 3.36,
+        "max": 3.58
+      },
+      "coldFirstCallMs": 4.82,
+      "dbMsMedian": 0.62,
+      "d1Calls": 16,
+      "d1Statements": 18,
+      "withinBudget": true,
+      "coldWithinBudget": true
+    },
+    {
+      "scenario": "POST start (jev, model-backed) incl. first decision preparation",
+      "runs": 29,
+      "appCpuMs": {
+        "median": 3.37,
+        "p95": 4.06,
+        "max": 5.19
+      },
+      "coldFirstCallMs": 6.29,
+      "dbMsMedian": 0.63,
+      "d1Calls": 16,
+      "d1Statements": 18,
+      "withinBudget": true,
+      "coldWithinBudget": true
+    },
+    {
+      "scenario": "GET poll, nothing due (jev, model-backed)",
+      "runs": 29,
+      "appCpuMs": {
+        "median": 0.18,
+        "p95": 0.31,
+        "max": 0.33
+      },
+      "coldFirstCallMs": 0.64,
+      "dbMsMedian": 0.06,
+      "d1Calls": 3,
+      "d1Statements": 3,
+      "withinBudget": true,
+      "coldWithinBudget": true
+    },
+    {
+      "scenario": "model-backed opponent: GET poll applying one due step (easy) + next decision",
+      "runs": 29,
+      "appCpuMs": {
+        "median": 1.01,
+        "p95": 2.2,
+        "max": 2.24
+      },
+      "coldFirstCallMs": 2.07,
+      "dbMsMedian": 0.42,
+      "d1Calls": 11,
+      "d1Statements": 14,
+      "withinBudget": true,
+      "coldWithinBudget": true
+    },
+    {
+      "scenario": "model-backed opponent: GET poll applying one due step (normal) + next decision",
+      "runs": 29,
+      "appCpuMs": {
+        "median": 1.34,
+        "p95": 1.84,
+        "max": 2.19
+      },
+      "coldFirstCallMs": 2.28,
+      "dbMsMedian": 0.43,
+      "d1Calls": 11,
+      "d1Statements": 14,
+      "withinBudget": true,
+      "coldWithinBudget": true
+    },
+    {
+      "scenario": "model-backed opponent: GET poll applying one due step (hard) + next decision",
+      "runs": 29,
+      "appCpuMs": {
+        "median": 3.79,
+        "p95": 6.66,
+        "max": 9.47
+      },
+      "coldFirstCallMs": 3.86,
+      "dbMsMedian": 0.61,
+      "d1Calls": 11,
+      "d1Statements": 14,
+      "withinBudget": true,
+      "coldWithinBudget": true
+    },
+    {
+      "scenario": "model-backed opponent: GET poll applying one due step (jev) + next decision",
+      "runs": 29,
+      "appCpuMs": {
+        "median": 5.75,
+        "p95": 7.42,
+        "max": 8.09
+      },
+      "coldFirstCallMs": 7.7,
+      "dbMsMedian": 0.8,
+      "d1Calls": 11,
+      "d1Statements": 14,
+      "withinBudget": true,
+      "coldWithinBudget": true
+    },
+    {
+      "scenario": "model-backed opponent: GET poll catching up 3 due steps (easy, the per-request budget)",
+      "runs": 29,
+      "appCpuMs": {
+        "median": 3.22,
+        "p95": 5.22,
+        "max": 5.67
+      },
+      "coldFirstCallMs": 4.07,
+      "dbMsMedian": 1.46,
+      "d1Calls": 21,
+      "d1Statements": 29,
+      "withinBudget": true,
+      "coldWithinBudget": true
+    },
+    {
+      "scenario": "model-backed opponent: GET poll catching up 3 due steps (normal, the per-request budget)",
+      "runs": 29,
+      "appCpuMs": {
+        "median": 4.29,
+        "p95": 6.05,
+        "max": 6.23
+      },
+      "coldFirstCallMs": 5.47,
+      "dbMsMedian": 1.46,
+      "d1Calls": 21,
+      "d1Statements": 29,
+      "withinBudget": true,
+      "coldWithinBudget": true
+    },
+    {
+      "scenario": "model-backed opponent: GET poll catching up 1 due steps (hard, the per-request budget)",
+      "runs": 29,
+      "appCpuMs": {
+        "median": 1.56,
+        "p95": 2.27,
+        "max": 2.4
+      },
+      "coldFirstCallMs": 2.13,
+      "dbMsMedian": 0.32,
+      "d1Calls": 5,
+      "d1Statements": 7,
+      "withinBudget": true,
+      "coldWithinBudget": true
+    },
+    {
+      "scenario": "model-backed opponent: GET poll catching up 1 due steps (jev, the per-request budget)",
+      "runs": 29,
+      "appCpuMs": {
+        "median": 1.7,
+        "p95": 2.68,
+        "max": 2.75
+      },
+      "coldFirstCallMs": 2.13,
+      "dbMsMedian": 0.37,
+      "d1Calls": 5,
+      "d1Statements": 7,
+      "withinBudget": true,
+      "coldWithinBudget": true
+    },
+    {
+      "scenario": "local opponent: GET poll catching up 6 due steps (easy)",
+      "runs": 29,
+      "appCpuMs": {
+        "median": 3.83,
+        "p95": 5.68,
+        "max": 9.99
+      },
+      "coldFirstCallMs": 4.98,
+      "dbMsMedian": 0.94,
+      "d1Calls": 9,
+      "d1Statements": 15,
+      "withinBudget": true,
+      "coldWithinBudget": true
+    },
+    {
+      "scenario": "local opponent: GET poll catching up 3 due steps (normal)",
+      "runs": 29,
+      "appCpuMs": {
+        "median": 3.21,
+        "p95": 4.97,
+        "max": 5.65
+      },
+      "coldFirstCallMs": 4.28,
+      "dbMsMedian": 0.53,
+      "d1Calls": 6,
+      "d1Statements": 9,
+      "withinBudget": true,
+      "coldWithinBudget": true
+    },
+    {
+      "scenario": "local opponent: GET poll catching up 1 due steps (hard)",
+      "runs": 29,
+      "appCpuMs": {
+        "median": 2.86,
+        "p95": 4.29,
+        "max": 4.53
+      },
+      "coldFirstCallMs": 4.63,
+      "dbMsMedian": 0.25,
+      "d1Calls": 4,
+      "d1Statements": 5,
+      "withinBudget": true,
+      "coldWithinBudget": true
+    },
+    {
+      "scenario": "local opponent: GET poll catching up 1 due steps (jev)",
+      "runs": 29,
+      "appCpuMs": {
+        "median": 3.94,
+        "p95": 6.34,
+        "max": 6.5
+      },
+      "coldFirstCallMs": 5.59,
+      "dbMsMedian": 0.25,
+      "d1Calls": 4,
+      "d1Statements": 5,
+      "withinBudget": true,
+      "coldWithinBudget": true
+    },
+    {
+      "scenario": "local opponent: GET poll applying one due step (normal)",
+      "runs": 29,
+      "appCpuMs": {
+        "median": 1.37,
+        "p95": 3.65,
+        "max": 4.44
+      },
+      "coldFirstCallMs": 2.87,
+      "dbMsMedian": 0.22,
+      "d1Calls": 3,
+      "d1Statements": 4,
+      "withinBudget": true,
+      "coldWithinBudget": true
+    },
+    {
+      "scenario": "local opponent: GET poll applying one due step (jev)",
+      "runs": 29,
+      "appCpuMs": {
+        "median": 4.39,
+        "p95": 6.57,
+        "max": 6.68
+      },
+      "coldFirstCallMs": 6.39,
+      "dbMsMedian": 0.29,
+      "d1Calls": 3,
+      "d1Statements": 4,
+      "withinBudget": true,
+      "coldWithinBudget": true
+    },
+    {
+      "scenario": "POST human action (set digit), jev profile",
+      "runs": 29,
+      "appCpuMs": {
+        "median": 0.68,
+        "p95": 0.88,
+        "max": 0.96
+      },
+      "coldFirstCallMs": 1.26,
+      "dbMsMedian": 0.36,
+      "d1Calls": 8,
+      "d1Statements": 9,
+      "withinBudget": true,
+      "coldWithinBudget": true
+    },
+    {
+      "scenario": "POST forfeit -> finalize after a full opponent run (normal, ~60 events)",
+      "runs": 14,
+      "appCpuMs": {
+        "median": 1.07,
+        "p95": 1.25,
+        "max": 1.25
+      },
+      "coldFirstCallMs": 1.22,
+      "dbMsMedian": 0.78,
+      "d1Calls": 15,
+      "d1Statements": 16,
+      "withinBudget": true,
+      "coldWithinBudget": true
+    },
+    {
+      "scenario": "POST forfeit -> finalize after a full opponent run (jev, ~100 events)",
+      "runs": 14,
+      "appCpuMs": {
+        "median": 0.88,
+        "p95": 1.59,
+        "max": 1.59
+      },
+      "coldFirstCallMs": 1.32,
+      "dbMsMedian": 0.75,
+      "d1Calls": 15,
+      "d1Statements": 16,
+      "withinBudget": true,
+      "coldWithinBudget": true
+    },
+    {
+      "scenario": "GET /api/matches/:id/analytics (finished jev match, ~1 MB of evidence: refused with 413)",
+      "runs": 14,
+      "appCpuMs": {
+        "median": 0.25,
+        "p95": 0.29,
+        "max": 0.29
+      },
+      "coldFirstCallMs": 0.41,
+      "dbMsMedian": 1.77,
+      "d1Calls": 4,
+      "d1Statements": 4,
+      "withinBudget": true,
+      "coldWithinBudget": true
+    },
+    {
+      "scenario": "GET /api/matches/:id/analytics (finished normal match, full evidence under the size cap)",
+      "runs": 29,
+      "appCpuMs": {
+        "median": 4.96,
+        "p95": 5.95,
+        "max": 6.39
+      },
+      "coldFirstCallMs": 4.49,
+      "dbMsMedian": 0.76,
+      "d1Calls": 6,
+      "d1Statements": 6,
+      "withinBudget": true,
+      "coldWithinBudget": true
+    },
+    {
+      "scenario": "GET /api/matches/:id/analytics?evidence=omit (finished jev match, on-screen view)",
+      "runs": 14,
+      "appCpuMs": {
+        "median": 5.88,
+        "p95": 9.62,
+        "max": 9.62
+      },
+      "coldFirstCallMs": 6.81,
+      "dbMsMedian": 3.78,
+      "d1Calls": 5,
+      "d1Statements": 5,
+      "withinBudget": true,
+      "coldWithinBudget": true
+    },
+    {
+      "scenario": "GET /api/matches/:id/analytics?evidence=omit (finished normal match)",
+      "runs": 29,
+      "appCpuMs": {
+        "median": 2.71,
+        "p95": 3.2,
+        "max": 3.37
+      },
+      "coldFirstCallMs": 3,
+      "dbMsMedian": 1.06,
+      "d1Calls": 5,
+      "d1Statements": 5,
+      "withinBudget": true,
+      "coldWithinBudget": true
+    },
+    {
+      "scenario": "GET /api/matches/:id/replay (finished jev match)",
+      "runs": 14,
+      "appCpuMs": {
+        "median": 3.41,
+        "p95": 4.61,
+        "max": 4.61
+      },
+      "coldFirstCallMs": 3.14,
+      "dbMsMedian": 1.13,
+      "d1Calls": 5,
+      "d1Statements": 5,
+      "withinBudget": true,
+      "coldWithinBudget": true
+    },
+    {
+      "scenario": "POST telemetry batch (50 events)",
+      "runs": 29,
+      "appCpuMs": {
+        "median": 0.34,
+        "p95": 0.42,
+        "max": 0.43
+      },
+      "coldFirstCallMs": 0.82,
+      "dbMsMedian": 0.45,
+      "d1Calls": 4,
+      "d1Statements": 7,
+      "withinBudget": true,
+      "coldWithinBudget": true
+    },
+    {
+      "scenario": "GET /api/leaderboard (world, 50 entries)",
+      "runs": 29,
+      "appCpuMs": {
+        "median": 0.28,
+        "p95": 0.33,
+        "max": 0.33
+      },
+      "coldFirstCallMs": 0.65,
+      "dbMsMedian": 3.16,
+      "d1Calls": 5,
+      "d1Statements": 5,
+      "withinBudget": true,
+      "coldWithinBudget": true
+    },
+    {
+      "scenario": "GET /api/analytics/me (100 matches)",
+      "runs": 29,
+      "appCpuMs": {
+        "median": 0.32,
+        "p95": 20.64,
+        "max": 20.69
+      },
+      "coldFirstCallMs": 1.4,
+      "dbMsMedian": 0.26,
+      "d1Calls": 5,
+      "d1Statements": 5,
+      "withinBudget": false,
+      "coldWithinBudget": true
+    },
+    {
+      "scenario": "GET /api/analytics/operator (500 results, uncached)",
+      "runs": 14,
+      "appCpuMs": {
+        "median": 10.62,
+        "p95": 37.79,
+        "max": 37.79
+      },
+      "coldFirstCallMs": 3.8,
+      "dbMsMedian": 33.59,
+      "d1Calls": 16,
+      "d1Statements": 16,
+      "withinBudget": false,
+      "coldWithinBudget": true
+    },
+    {
+      "scenario": "GET /api/analytics/operator (cached, 5 min)",
+      "runs": 29,
+      "appCpuMs": {
+        "median": 0.19,
+        "p95": 0.29,
+        "max": 0.32
+      },
+      "coldFirstCallMs": 0.58,
+      "dbMsMedian": 0.09,
+      "d1Calls": 3,
+      "d1Statements": 3,
+      "withinBudget": true,
+      "coldWithinBudget": true
+    },
+    {
+      "scenario": "POST /api/discord/interactions (signed /jev sudoku)",
+      "runs": 29,
+      "appCpuMs": {
+        "median": 0.64,
+        "p95": 0.89,
+        "max": 0.89
+      },
+      "coldFirstCallMs": 2.87,
+      "dbMsMedian": 0.1,
+      "d1Calls": 3,
+      "d1Statements": 4,
+      "withinBudget": true,
+      "coldWithinBudget": true
+    },
+    {
+      "scenario": "lazy maintenance sweep (forced, 60 stale rows)",
+      "runs": 29,
+      "appCpuMs": {
+        "median": 0.03,
+        "p95": 0.04,
+        "max": 0.05
+      },
+      "coldFirstCallMs": 0.96,
+      "dbMsMedian": 0.39,
+      "d1Calls": 11,
+      "d1Statements": 11,
+      "withinBudget": true,
+      "coldWithinBudget": true
+    }
+  ]
+}
