@@ -165,6 +165,7 @@ if(process.argv[1]===fileURLToPath(import.meta.url)){
     opponent:config.jevKey?'JEV':'local_heuristic',discordConfigured:!!config.discordClientId})));
   let stopping=false;const stop=()=>{if(stopping){app.close().then(()=>process.exit(0));return;}stopping=true;app.service.draining=true;
     console.log(JSON.stringify({event:'draining',note:'No new matches accepted. A second signal exits immediately; active attempts become void on recovery.'}));
+    const graceMs=Number(process.env.SHUTDOWN_GRACE_MS);if(Number.isInteger(graceMs)&&graceMs>0)setTimeout(()=>{console.log(JSON.stringify({event:'drain_grace_expired',graceMs}));app.close().then(()=>process.exit(0));},graceMs).unref();
     const drain=setInterval(()=>{const n=app.db.prepare("SELECT COUNT(*) AS n FROM matches WHERE status IN('running','settling')").get().n;
       if(!n){clearInterval(drain);app.close().then(()=>process.exit(0));}},500);};
   process.on('SIGTERM',stop);process.on('SIGINT',stop);
