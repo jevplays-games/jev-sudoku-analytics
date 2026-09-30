@@ -29,18 +29,24 @@ export function cookies(header='') {
   const out={};for(const part of header.split(';')) {const index=part.indexOf('=');if(index>0) out[part.slice(0,index).trim()]=part.slice(index+1).trim();}return out;
 }
 export function sessionCookie(raw,secure,maxAge=604800) {return `jev_session=${raw}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAge}${secure?'; Secure':''}`;}
-export function issueSession(db,{userId=null,context=null,consent=0,now=Date.now()}={}) {
-  const raw=token(),row={hash:hash(raw),user_id:userId,csrf:token(),context_json:context?JSON.stringify(context):null,telemetry_consent:consent,created_at:now,expires_at:now+7*86400000};
+export function issueSession(db,{userId=null,context=null,consent=0,now=Date.now(),ttlMs=7*86400000}={}) {
+  const raw=token(),row={hash:hash(raw),user_id:userId,csrf:token(),context_json:context?JSON.stringify(context):null,telemetry_consent:consent,created_at:now,expires_at:now+ttlMs};
   db.prepare('INSERT INTO sessions(hash,user_id,csrf,context_json,telemetry_consent,created_at,expires_at) VALUES(?,?,?,?,?,?,?)')
     .run(row.hash,row.user_id,row.csrf,row.context_json,row.telemetry_consent,row.created_at,row.expires_at);
   return {raw,row};
 }
+// Inside a Discord Activity the browser will not send our SameSite cookie, so the game holds the session token in memory
+// and presents it as a bearer credential. A bearer that matches no session falls through to the cookie path unchanged.
 export function getSession(db,req,now=Date.now()) {
+  const bearer=/^Bearer ([A-Za-z0-9_-]{43})$/.exec(req.headers.authorization||'')?.[1];
+  if(bearer){const row=db.prepare('SELECT * FROM sessions WHERE hash=? AND expires_at>?').get(hash(bearer),now);if(row)return {...row,via:'bearer'};}
   const raw=cookies(req.headers.cookie).jev_session;if(!raw||raw.length>100)return null;
   return db.prepare('SELECT * FROM sessions WHERE hash=? AND expires_at>?').get(hash(raw),now)||null;
 }
-export function requireCsrf(req,session,origin) {
-  if(!session || req.headers.origin!==origin || !same(req.headers['x-csrf-token'],session.csrf)) throw httpError(403,'csrf_rejected');
+export function requireCsrf(req,session,origin,activityOrigin=null) {
+  // The Activity origin is honoured only for bearer sessions, never for cookie sessions.
+  const allowed=req.headers.origin===origin||(session?.via==='bearer'&&!!activityOrigin&&req.headers.origin===activityOrigin);
+  if(!session || !allowed || !same(req.headers['x-csrf-token'],session.csrf)) throw httpError(403,'csrf_rejected');
 }
 export class RateLimiter {
   constructor(maxKeys=10000){this.buckets=new Map();this.maxKeys=maxKeys;}

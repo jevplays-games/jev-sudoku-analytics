@@ -19,8 +19,9 @@ const messages={discord_not_configured:'Discord sign-in is not configured on thi
  launch_wrong_user:'This launch link belongs to another Discord user. Run /jev sudoku yourself.',
  launch_already_used_or_expired:'This personal launch link is expired or already used. Run /jev sudoku again.'};
 function friendly(e){return messages[e.message]||e.message?.replaceAll('_',' ')||'The request could not be completed.';}
+let bearer=null,activity=null; // set only inside a Discord Activity, where cookies are not sent
 async function api(path,{method='GET',body}={}){
-  const response=await fetch(path,{method,credentials:'same-origin',cache:'no-store',headers:body!==undefined?{'Content-Type':'application/json','X-CSRF-Token':me?.csrfToken||''}:{},body:body===undefined?undefined:JSON.stringify(body)});
+  const response=await fetch(path,{method,credentials:'same-origin',cache:'no-store',headers:{...(bearer?{Authorization:`Bearer ${bearer}`}:{}),...(body!==undefined?{'Content-Type':'application/json','X-CSRF-Token':me?.csrfToken||''}:{})},body:body===undefined?undefined:JSON.stringify(body)});
   let value;try{value=await response.json();}catch{throw new Error('invalid_server_response');}
   if(!response.ok){const e=new Error(value.error||`http_${response.status}`);e.status=response.status;throw e;}return value;
 }
@@ -77,7 +78,7 @@ function render(){
   if(p?.opponent==='Heuristic fallback')notice('JEV is unavailable. This game is continuing against the heuristic and will not count toward ranked results.');
 }
 function acceptState(p){if(replayMode)return;if(current&&current.id===p.id&&p.sequence<current.sequence)return;current=p;stateReceived=performance.now();storage.set('jev-current',p.id);if(p.givens)storage.set('jev-practice-copy',{givens:p.givens,human:p.human?.values,difficulty:p.config.difficulty});render();}
-function connectStream(id){stream?.close();stream=new EventSource(`/api/matches/${id}/events`);let opened=false;
+function connectStream(id){stream?.close();stream=bearer?activity.bearerEventSource(`/api/matches/${id}/events`,bearer):new EventSource(`/api/matches/${id}/events`);let opened=false;
   stream.addEventListener('state',e=>{try{if(!local)acceptState(JSON.parse(e.data));}catch{notice('An invalid live update was ignored. Reload to resynchronize.');}});
   stream.onopen=()=>{$('connection-label').textContent='Connected';$('offline-button').hidden=true;if(opened)record('reconnect');opened=true;};
   stream.onerror=()=>{if(local)return;$('connection-label').textContent='Reconnecting';$('offline-button').hidden=!current?.givens;};
@@ -147,6 +148,10 @@ async function boot(){buildBoards();render();$('leaderboard-date').value=new Dat
   difficulty=storage.get('jev-difficulty','jev');if(!['easy','normal','hard','jev'].includes(difficulty))difficulty='jev';setDifficulty(difficulty);
   const fragment=new URLSearchParams(location.hash.slice(1));if(fragment.has('launch')){sessionStorage.setItem('jev-launch',fragment.get('launch'));history.replaceState(null,'',location.pathname);}
   if(fragment.has('login')){notice(fragment.get('login')==='success'?'Signed in with Discord.':'Discord sign-in could not be completed. Practice remains available.');history.replaceState(null,'',location.pathname);}
+  if(new URLSearchParams(location.search).has('frame_id')){
+    try{activity=await import('/activity.js');bearer=(await activity.signInWithDiscord(api)).token;}
+    catch(e){notice(`Could not sign in through Discord. ${friendly(e)}`,true);}
+  }
   try{
     me=await api('/api/me');$('connection-label').textContent='Connected';$('identity-label').textContent=me.user?.display_name||'Guest session';$('login').hidden=!!me.user;$('logout').hidden=!me.user;$('telemetry-consent').checked=me.telemetryConsent;$('operator-section').hidden=!me.admin;
     if(!me.capabilities.discord){$('login').textContent='Discord not configured';$('login').setAttribute('aria-disabled','true');$('login').addEventListener('click',e=>{e.preventDefault();notice(messages.discord_not_configured);});}

@@ -20,8 +20,20 @@ export async function finishOAuth(db,config,session,params,fetchImpl=fetch) {
   });
   if(params.has('error'))throw httpError(400,'oauth_declined');
   if(!code||code.length>4096)throw httpError(400,'oauth_code_missing');
-  const tokenResponse=await fetchImpl('https://discord.com/api/oauth2/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},
-    body:new URLSearchParams({client_id:config.discordClientId,client_secret:config.discordClientSecret,grant_type:'authorization_code',code,redirect_uri:`${config.origin}/api/auth/discord/callback`}),signal:AbortSignal.timeout(10000)});
+  const {user}=await discordIdentity(config,code,`${config.origin}/api/auth/discord/callback`,fetchImpl);
+  return transaction(db,()=>{
+    upsertUser(db,user);
+    const issued=issueSession(db,{userId:user.id,consent:session.telemetry_consent});
+    // Preserve ownership of guest games without converting their original identity or eligibility.
+    db.prepare('UPDATE matches SET owner_hash=? WHERE owner_hash=? AND user_id IS NULL').run(issued.row.hash,session.hash);
+    db.prepare('DELETE FROM sessions WHERE hash=?').run(session.hash);
+    operation(db,'oauth_succeeded',{});return issued;
+  });
+}
+// redirectUri is omitted for an Embedded App SDK authorization code, which Discord issues without one.
+export async function discordIdentity(config,code,redirectUri,fetchImpl=fetch) {
+  const form={client_id:config.discordClientId,client_secret:config.discordClientSecret,grant_type:'authorization_code',code};if(redirectUri)form.redirect_uri=redirectUri;
+  const tokenResponse=await fetchImpl('https://discord.com/api/oauth2/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams(form),signal:AbortSignal.timeout(10000)});
   if(!tokenResponse.ok)throw httpError(502,'discord_token_failed');
   const authorization=await tokenResponse.json();
   if(typeof authorization.access_token!=='string')throw httpError(502,'discord_token_invalid');
@@ -29,16 +41,26 @@ export async function finishOAuth(db,config,session,params,fetchImpl=fetch) {
   if(!response.ok)throw httpError(502,'discord_identity_failed');
   const user=await response.json();if(typeof user.id!=='string'||!/^\d{5,25}$/.test(user.id))throw httpError(502,'discord_identity_invalid');
   // Access/refresh tokens are intentionally not persisted.
-  return transaction(db,()=>{
-    const now=Date.now(),name=String(user.global_name||user.username||'Discord player').slice(0,80);
-    const avatar=typeof user.avatar==='string'&&/^[a-zA-Z0-9_]{1,100}$/.test(user.avatar)?user.avatar:null;
-    db.prepare('INSERT INTO users(id,display_name,avatar,created_at,last_seen_at) VALUES(?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET display_name=excluded.display_name,avatar=excluded.avatar,last_seen_at=excluded.last_seen_at').run(user.id,name,avatar,now,now);
-    const issued=issueSession(db,{userId:user.id,consent:session.telemetry_consent});
-    // Preserve ownership of guest games without converting their original identity or eligibility.
-    db.prepare('UPDATE matches SET owner_hash=? WHERE owner_hash=? AND user_id IS NULL').run(issued.row.hash,session.hash);
-    db.prepare('DELETE FROM sessions WHERE hash=?').run(session.hash);
-    operation(db,'oauth_succeeded',{});return issued;
-  });
+  return {user,accessToken:authorization.access_token};
+}
+function upsertUser(db,user) {
+  const now=Date.now(),name=String(user.global_name||user.username||'Discord player').slice(0,80);
+  const avatar=typeof user.avatar==='string'&&/^[a-zA-Z0-9_]{1,100}$/.test(user.avatar)?user.avatar:null;
+  db.prepare('INSERT INTO users(id,display_name,avatar,created_at,last_seen_at) VALUES(?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET display_name=excluded.display_name,avatar=excluded.avatar,last_seen_at=excluded.last_seen_at').run(user.id,name,avatar,now,now);
+}
+export function activityConfig(config) {
+  if(!config.discordClientId||!config.discordClientSecret)throw httpError(503,'discord_not_configured');
+  return {clientId:config.discordClientId};
+}
+// Discord Activity sign-in: an SDK authorization code becomes a bearer session. The raw token is returned once and only its hash is stored.
+export async function activitySession(db,config,origin,code,fetchImpl=fetch) {
+  if(!config.discordClientId||!config.discordClientSecret)throw httpError(503,'discord_not_configured');
+  if(!origin||(origin!==config.origin&&origin!==config.activityOrigin))throw httpError(403,'origin_rejected');
+  if(typeof code!=='string'||!code||code.length>4096)throw httpError(400,'oauth_code_missing');
+  const {user,accessToken}=await discordIdentity(config,code,null,fetchImpl);
+  const issued=transaction(db,()=>{upsertUser(db,user);return issueSession(db,{userId:user.id,ttlMs:86400000});});
+  operation(db,'activity_session_issued',{});
+  return {token:issued.raw,csrf:issued.row.csrf,accessToken,user:{id:user.id,display_name:String(user.global_name||user.username||'Discord player').slice(0,80)}};
 }
 export function redeemContext(db,config,session,value) {
   if(!session?.user_id)throw httpError(401,'discord_login_required');

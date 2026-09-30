@@ -5,8 +5,9 @@ export function loadConfig(env=process.env) {
   const production=env.NODE_ENV==='production',origin=new URL(env.APP_ORIGIN||'http://localhost:3000').origin;
   if(production&&!origin.startsWith('https://'))throw new Error('APP_ORIGIN must use HTTPS in production');
   if(production&&(!env.LAUNCH_SIGNING_KEY||env.LAUNCH_SIGNING_KEY.length<32))throw new Error('Set a random LAUNCH_SIGNING_KEY of at least 32 characters');
-  return {production,origin,host:env.HOST||'127.0.0.1',port:int('PORT',3000,0,65535),database:env.DATABASE_PATH||'data/arcade.sqlite',
-    launchKey:env.LAUNCH_SIGNING_KEY||randomBytes(32).toString('hex'),discordClientId:env.DISCORD_CLIENT_ID||'',discordClientSecret:env.DISCORD_CLIENT_SECRET||'',
+  const discordClientId=env.DISCORD_CLIENT_ID||'';
+  return {production,origin,activityOrigin:/^\d{5,25}$/.test(discordClientId)?`https://${discordClientId}.discordsays.com`:null,host:env.HOST||'127.0.0.1',port:int('PORT',3000,0,65535),database:env.DATABASE_PATH||'data/arcade.sqlite',
+    launchKey:env.LAUNCH_SIGNING_KEY||randomBytes(32).toString('hex'),discordClientId,discordClientSecret:env.DISCORD_CLIENT_SECRET||'',
     discordPublicKey:env.DISCORD_PUBLIC_KEY||'',jevKey:env.TYPESAFE_API_KEY||'',jevModel:env.JEV_MODEL||'jev-1.13.0',
     jevEndpoint:'https://api.typesafe.ai/v1/systemone',pacingMs:int('PRACTICE_PACING_MS',8000,250,60000),
     maxActive:int('MAX_ACTIVE_MATCHES',20,1,200),maxJevConcurrent:int('MAX_OUTBOUND_JEV_REQUESTS',8,1,100),
