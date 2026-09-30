@@ -1,4 +1,6 @@
-import { invariant } from '../shared/sudoku.js';
+import { invariant } from '../public/shared/sudoku.js';
+import { run } from './db.js';
+import { now } from './util.js';
 export const CLIENT_EVENTS=Object.freeze({
   cell_focus:{cell:['int',0,80],durationMs:['number',0,60000]},
   note_added:{cell:['int',0,80]},note_removed:{cell:['int',0,80]},
@@ -20,10 +22,6 @@ export function validateClientEvent(event) {
   }
   return {id:event.id,name:event.name,properties};
 }
-export function track(db,matchId,name,properties,trust='server',clientId=null,now=Date.now()) {
-  db.prepare('INSERT OR IGNORE INTO telemetry(match_id,name,trust,properties_json,client_event_id,created_at) VALUES(?,?,?,?,?,?)')
-    .run(matchId,name,trust,JSON.stringify(properties),clientId,now);
-}
-export function operation(db,name,properties,now=Date.now()) {
-  db.prepare('INSERT INTO operations(name,properties_json,created_at) VALUES(?,?,?)').run(name,JSON.stringify(properties),now);
-}
+export const trackStatement=(env,matchId,name,properties,trust='server',clientId=null,at=now(env))=>env.DB.prepare('INSERT OR IGNORE INTO telemetry(match_id,name,trust,properties_json,client_event_id,created_at) VALUES(?,?,?,?,?,?)').bind(matchId,name,trust,JSON.stringify(properties),clientId,at);
+export const track=(env,matchId,name,properties,trust='server',clientId=null,at=now(env))=>trackStatement(env,matchId,name,properties,trust,clientId,at).run();
+export const operation=(env,name,properties,at=now(env))=>run(env,'INSERT INTO operations(name,properties_json,created_at) VALUES(?,?,?)',name,JSON.stringify(properties),at);

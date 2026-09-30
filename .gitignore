@@ -1,9 +1,12 @@
+node_modules/
 .env
 .env.*
 !.env.example
+.dev.vars
+.data/
+.wrangler/
 data/
 backups/
-node_modules/
 __pycache__/
 *.pyc
 *.sqlite

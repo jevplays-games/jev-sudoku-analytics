@@ -1,0 +1,6 @@
+# Static assets other than "/" are served by Cloudflare without invoking the Worker (run_worker_first covers /api/* and / only).
+# The document at "/" gets its full CSP, frame policy and HSTS from server/worker.js; these cover the rest.
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: no-referrer
+  Permissions-Policy: camera=(), microphone=(), geolocation=()

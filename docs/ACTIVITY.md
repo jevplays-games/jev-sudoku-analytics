@@ -1,7 +1,7 @@
 # Discord Activity mode
 
 Discord can launch this game as an Activity: it loads the game in an iframe on
-`https://<DISCORD_CLIENT_ID>.discordsays.com`, which Discord proxies to this server.
+`https://<DISCORD_CLIENT_ID>.discordsays.com`, which Discord proxies to the Worker at `sudoku.jevplay.games`.
 Nothing changes for the normal browser flow; Activity behaviour is only enabled when the page
 URL carries Discord's `frame_id` query parameter.
 
@@ -15,8 +15,8 @@ URL carries Discord's `frame_id` query parameter.
    It returns a bearer token, the CSRF token and the Discord access token (needed once by
    `sdk.commands.authenticate`). Only the token's hash is stored; the access token is never stored.
 3. The client keeps the bearer token in memory and sends `Authorization: Bearer <token>`. Browsers do not
-   send the SameSite cookie inside the iframe. The live match stream uses a fetch reader instead of
-   `EventSource`, which cannot send headers.
+   send the SameSite cookie inside the iframe. The game reads match state by polling `GET /api/matches/:id`
+   with the same bearer header, so no special stream reader is needed (the old fetch-based event reader was removed with SSE).
 4. `requireCsrf` accepts `Origin: https://<DISCORD_CLIENT_ID>.discordsays.com` **only for bearer sessions**.
    Cookie sessions, other origins and other applications' `discordsays.com` origins are still rejected, and
    the CSRF token is still required.
@@ -26,8 +26,7 @@ URL carries Discord's `frame_id` query parameter.
    response, remain `DENY` / `frame-ancestors 'none'`.
 
 `GET /api/activity/config` returns the public client id. Session creation is rate limited per remote
-address (300/hour; behind the Cloudflare Tunnel the remote address is the tunnel, so this is effectively
-a global cap). The signed `LAUNCH_SIGNING_KEY` flow for `/jev sudoku` is untouched.
+address (300/hour, kept in D1 so every isolate shares it; the address is Cloudflare's `cf-connecting-ip`). The signed `LAUNCH_SIGNING_KEY` flow for `/jev sudoku` is untouched.
 
 ## Discord developer portal
 

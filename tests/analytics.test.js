@@ -1,6 +1,6 @@
 import test from'node:test';import assert from'node:assert/strict';
-import {analyzeMatch,distribution,redactAnalytics,aggregateReports,toCsv,entropy}from'../shared/analytics.js';
-import {createMatchState,advanceState}from'../shared/match.js';import{getJevCandidates}from'../shared/sudoku-ai.js';import{validateClientEvent}from'../server/telemetry.js';
+import {analyzeMatch,distribution,redactAnalytics,aggregateReports,toCsv,entropy}from'../public/shared/analytics.js';
+import {createMatchState,advanceState}from'../public/shared/match.js';import{getJevCandidates}from'../public/shared/sudoku-ai.js';import{validateClientEvent}from'../server/telemetry.js';
 const puzzle='004678912672195348198342567859761423426853791713924856961537284287419635345286179';
 const initial={givens:puzzle,config:createMatchState(puzzle,{mode:'ranked',pacingMs:1000}).config};
 const events=[{type:'start',ms:0,sequence:1},{type:'human',ms:200,sequence:2,action:{kind:'set',cell:0,digit:5}},{type:'human',ms:500,sequence:3,action:{kind:'clear',cell:0}},{type:'human',ms:800,sequence:4,action:{kind:'undo'}},{type:'human',ms:1200,sequence:5,action:{kind:'set',cell:1,digit:3}},{type:'settle',ms:2000,sequence:6}];

@@ -1,5 +1,4 @@
-import{loadConfig}from'../server/config.js';
-const c=loadConfig();if(!c.discordClientId||!c.discordClientSecret)throw Error('Set DISCORD_CLIENT_ID and DISCORD_CLIENT_SECRET.');
+const c={discordClientId:process.env.DISCORD_CLIENT_ID||'',discordClientSecret:process.env.DISCORD_CLIENT_SECRET||''};if(!c.discordClientId||!c.discordClientSecret)throw Error('Set DISCORD_CLIENT_ID and DISCORD_CLIENT_SECRET.');
 const tokenResponse=await fetch('https://discord.com/api/oauth2/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({grant_type:'client_credentials',client_id:c.discordClientId,client_secret:c.discordClientSecret,scope:'applications.commands.update'}),signal:AbortSignal.timeout(10000)});
 if(!tokenResponse.ok)throw Error(`Command credential request failed: HTTP ${tokenResponse.status}`);const authorization=await tokenResponse.json();
 const guild=process.env.DISCORD_TEST_GUILD_ID;

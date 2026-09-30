@@ -1,0 +1,796 @@
+TAP version 13
+# Subtest: activity config exposes only the public client id and needs Discord configured
+ok 1 - activity config exposes only the public client id and needs Discord configured
+  ---
+  duration_ms: 24.7969
+  type: 'test'
+  ...
+# Subtest: an SDK code becomes a bearer session: exchanged without a redirect uri, raw token not stored
+ok 2 - an SDK code becomes a bearer session: exchanged without a redirect uri, raw token not stored
+  ---
+  duration_ms: 8.2889
+  type: 'test'
+  ...
+# Subtest: the bearer session works for reads and for mutations from the activity origin
+ok 3 - the bearer session works for reads and for mutations from the activity origin
+  ---
+  duration_ms: 20.9159
+  type: 'test'
+  ...
+# Subtest: the activity origin is accepted only together with a bearer session
+ok 4 - the activity origin is accepted only together with a bearer session
+  ---
+  duration_ms: 9.0742
+  type: 'test'
+  ...
+# Subtest: with no Discord client id the activity origin is never accepted
+ok 5 - with no Discord client id the activity origin is never accepted
+  ---
+  duration_ms: 5.3972
+  type: 'test'
+  ...
+# Subtest: session creation rejects foreign origins, missing codes and Discord failures
+ok 6 - session creation rejects foreign origins, missing codes and Discord failures
+  ---
+  duration_ms: 8.2332
+  type: 'test'
+  ...
+# Subtest: activity session creation is rate limited per address from D1
+ok 7 - activity session creation is rate limited per address from D1
+  ---
+  duration_ms: 229.1598
+  type: 'test'
+  ...
+# Subtest: only a page loaded with frame_id may be framed, and only by Discord
+ok 8 - only a page loaded with frame_id may be framed, and only by Discord
+  ---
+  duration_ms: 8.7609
+  type: 'test'
+  ...
+# Subtest: the Activity client no longer ships a live-stream reader
+ok 9 - the Activity client no longer ships a live-stream reader
+  ---
+  duration_ms: 1.0307
+  type: 'test'
+  ...
+# Subtest: exact gameplay metric accounting and empty-denominator behavior
+ok 10 - exact gameplay metric accounting and empty-denominator behavior
+  ---
+  duration_ms: 2.3166
+  type: 'test'
+  ...
+# Subtest: percentiles, standard deviation and entropy are reproducible
+ok 11 - percentiles, standard deviation and entropy are reproducible
+  ---
+  duration_ms: 0.2526
+  type: 'test'
+  ...
+# Subtest: client telemetry is separated from server evidence and never changes score
+ok 12 - client telemetry is separated from server evidence and never changes score
+  ---
+  duration_ms: 0.6884
+  type: 'test'
+  ...
+# Subtest: cost estimates require configured prices and complete reported token usage
+ok 13 - cost estimates require configured prices and complete reported token usage
+  ---
+  duration_ms: 0.9373
+  type: 'test'
+  ...
+# Subtest: redaction strips coordinates, digits, action IDs, probabilities and evidence
+ok 14 - redaction strips coordinates, digits, action IDs, probabilities and evidence
+  ---
+  duration_ms: 11.7953
+  type: 'test'
+  ...
+# Subtest: summary separates difficulties and records streaks
+ok 15 - summary separates difficulties and records streaks
+  ---
+  duration_ms: 1.3339
+  type: 'test'
+  ...
+# Subtest: telemetry schema rejects arbitrary text, keys, timestamps and forged event names
+ok 16 - telemetry schema rejects arbitrary text, keys, timestamps and forged event names
+  ---
+  duration_ms: 0.7227
+  type: 'test'
+  ...
+# Subtest: CSV safely escapes commas, quotes, newlines and spreadsheet formulas
+ok 17 - CSV safely escapes commas, quotes, newlines and spreadsheet formulas
+  ---
+  duration_ms: 0.3864
+  type: 'test'
+  ...
+# Subtest: voided attempts are not wins, losses, draws, or completion-rate denominator
+ok 18 - voided attempts are not wins, losses, draws, or completion-rate denominator
+  ---
+  duration_ms: 0.6363
+  type: 'test'
+  ...
+# Subtest: HTTP security headers, static assets, and unauthenticated boundaries
+ok 19 - HTTP security headers, static assets, and unauthenticated boundaries
+  ---
+  duration_ms: 29.0897
+  type: 'test'
+  ...
+# Subtest: production origins add HSTS and Secure cookies
+ok 20 - production origins add HSTS and Secure cookies
+  ---
+  duration_ms: 3.6342
+  type: 'test'
+  ...
+# Subtest: a misconfigured production Worker fails closed with a generic 503
+ok 21 - a misconfigured production Worker fails closed with a generic 503
+  ---
+  duration_ms: 4.0811
+  type: 'test'
+  ...
+# Subtest: HTTP create/start/action/analytics and strict ownership
+ok 22 - HTTP create/start/action/analytics and strict ownership
+  ---
+  duration_ms: 22.5073
+  type: 'test'
+  ...
+# Subtest: rule violations are 422 with a machine-readable code, never a 500
+ok 23 - rule violations are 422 with a machine-readable code, never a 500
+  ---
+  duration_ms: 14.282
+  type: 'test'
+  ...
+# Subtest: polling is how state is read: a GET applies due opponent steps, and the old event stream is gone
+ok 24 - polling is how state is read: a GET applies due opponent steps, and the old event stream is gone
+  ---
+  duration_ms: 17.2017
+  type: 'test'
+  ...
+# Subtest: a move that is refused because the opponent is behind can be retried with the same request id
+ok 25 - a move that is refused because the opponent is behind can be retried with the same request id
+  ---
+  duration_ms: 29.188
+  type: 'test'
+  ...
+# Subtest: telemetry requires consent, validates event allowlist, and can be purged
+ok 26 - telemetry requires consent, validates event allowlist, and can be purged
+  ---
+  duration_ms: 9.0272
+  type: 'test'
+  ...
+# Subtest: withdrawing consent removes client telemetry, and reports are rebuilt from what remains on the next read
+ok 27 - withdrawing consent removes client telemetry, and reports are rebuilt from what remains on the next read
+  ---
+  duration_ms: 10.991
+  type: 'test'
+  ...
+# Subtest: the analytics endpoint can omit per-decision candidate evidence, and replays are served byte-for-byte from stored events
+ok 28 - the analytics endpoint can omit per-decision candidate evidence, and replays are served byte-for-byte from stored events
+  ---
+  duration_ms: 19.5259
+  type: 'test'
+  ...
+# Subtest: full candidate evidence is refused above a CPU-safe size, while the lean view and the replay still serve the whole game
+ok 29 - full candidate evidence is refused above a CPU-safe size, while the lean view and the replay still serve the whole game
+  ---
+  duration_ms: 18.5454
+  type: 'test'
+  ...
+# Subtest: personal reports summarise finished and in-progress matches without replaying them
+ok 30 - personal reports summarise finished and in-progress matches without replaying them
+  ---
+  duration_ms: 17.5663
+  type: 'test'
+  ...
+# Subtest: data export is paged, hides server keys, and deletion is confirmed and complete
+ok 31 - data export is paged, hides server keys, and deletion is confirmed and complete
+  ---
+  duration_ms: 16.8501
+  type: 'test'
+  ...
+# Subtest: logout revokes the session; new-game and session creation are rate limited from D1
+ok 32 - logout revokes the session; new-game and session creation are rate limited from D1
+  ---
+  duration_ms: 65.9544
+  type: 'test'
+  ...
+# Subtest: operator analytics need an admin session or the analytics token, and are rate limited
+ok 33 - operator analytics need an admin session or the analytics token, and are rate limited
+  ---
+  duration_ms: 4.8218
+  type: 'test'
+  ...
+# Subtest: request bodies are bounded and must be JSON objects
+ok 34 - request bodies are bounded and must be JSON objects
+  ---
+  duration_ms: 5.9977
+  type: 'test'
+  ...
+# Subtest: local opponent: catching up on the easy profile applies its per-request budget of 6 step(s) within the database query ceiling
+ok 35 - local opponent: catching up on the easy profile applies its per-request budget of 6 step(s) within the database query ceiling
+  ---
+  duration_ms: 38.8675
+  type: 'test'
+  ...
+# Subtest: local opponent: catching up on the normal profile applies its per-request budget of 3 step(s) within the database query ceiling
+ok 36 - local opponent: catching up on the normal profile applies its per-request budget of 3 step(s) within the database query ceiling
+  ---
+  duration_ms: 16.3276
+  type: 'test'
+  ...
+# Subtest: local opponent: catching up on the hard profile applies its per-request budget of 1 step(s) within the database query ceiling
+ok 37 - local opponent: catching up on the hard profile applies its per-request budget of 1 step(s) within the database query ceiling
+  ---
+  duration_ms: 14.6563
+  type: 'test'
+  ...
+# Subtest: local opponent: catching up on the jev profile applies its per-request budget of 1 step(s) within the database query ceiling
+ok 38 - local opponent: catching up on the jev profile applies its per-request budget of 1 step(s) within the database query ceiling
+  ---
+  duration_ms: 12.8638
+  type: 'test'
+  ...
+# Subtest: model-backed opponent: catching up on the easy profile applies its per-request budget of 3 step(s) within the database query ceiling
+ok 39 - model-backed opponent: catching up on the easy profile applies its per-request budget of 3 step(s) within the database query ceiling
+  ---
+  duration_ms: 11.3749
+  type: 'test'
+  ...
+# Subtest: model-backed opponent: catching up on the normal profile applies its per-request budget of 3 step(s) within the database query ceiling
+ok 40 - model-backed opponent: catching up on the normal profile applies its per-request budget of 3 step(s) within the database query ceiling
+  ---
+  duration_ms: 20.0611
+  type: 'test'
+  ...
+# Subtest: model-backed opponent: catching up on the hard profile applies its per-request budget of 1 step(s) within the database query ceiling
+ok 41 - model-backed opponent: catching up on the hard profile applies its per-request budget of 1 step(s) within the database query ceiling
+  ---
+  duration_ms: 13.1042
+  type: 'test'
+  ...
+# Subtest: model-backed opponent: catching up on the jev profile applies its per-request budget of 1 step(s) within the database query ceiling
+ok 42 - model-backed opponent: catching up on the jev profile applies its per-request budget of 1 step(s) within the database query ceiling
+  ---
+  duration_ms: 14.0916
+  type: 'test'
+  ...
+# Subtest: the write paths and the sweep each stay under the query ceiling
+ok 43 - the write paths and the sweep each stay under the query ceiling
+  ---
+  duration_ms: 26.1577
+  type: 'test'
+  ...
+# Subtest: a stale-heavy sweep is bounded: reservations, abandoned matches and unfinalized results are each capped
+ok 44 - a stale-heavy sweep is bounded: reservations, abandoned matches and unfinalized results are each capped
+  ---
+  duration_ms: 33.3217
+  type: 'test'
+  ...
+# Subtest: a provider request that finishes after the match did is counted in the stored result, in one batch
+ok 45 - a provider request that finishes after the match did is counted in the stored result, in one batch
+  ---
+  duration_ms: 11.1986
+  type: 'test'
+  ...
+# Subtest: candidate generation is byte-identical to the pinned reference walks
+ok 46 - candidate generation is byte-identical to the pinned reference walks
+  ---
+  duration_ms: 2432.1571
+  type: 'test'
+  ...
+# Subtest: public https origin means production, and production requires a launch signing key
+ok 47 - public https origin means production, and production requires a launch signing key
+  ---
+  duration_ms: 1.058
+  type: 'test'
+  ...
+# Subtest: loopback and http origins stay development; NODE_ENV=production still enforces https
+ok 48 - loopback and http origins stay development; NODE_ENV=production still enforces https
+  ---
+  duration_ms: 4.3436
+  type: 'test'
+  ...
+# Subtest: numeric settings are validated and defaults match the documented free-plan quotas
+ok 49 - numeric settings are validated and defaults match the documented free-plan quotas
+  ---
+  duration_ms: 1.1106
+  type: 'test'
+  ...
+# Subtest: config is derived from the Discord client id and cached per env object
+ok 50 - config is derived from the Discord client id and cached per env object
+  ---
+  duration_ms: 0.3348
+  type: 'test'
+  ...
+# Subtest: valid structured choice and state encoding excludes human information
+ok 51 - valid structured choice and state encoding excludes human information
+  ---
+  duration_ms: 1.6516
+  type: 'test'
+  ...
+# Subtest: probability distribution, confidence, model, IDs and usage are strict
+ok 52 - probability distribution, confidence, model, IDs and usage are strict
+  ---
+  duration_ms: 0.6562
+  type: 'test'
+  ...
+# Subtest: equal top probabilities use canonical action ID, not provider tie choice
+ok 53 - equal top probabilities use canonical action ID, not provider tie choice
+  ---
+  duration_ms: 0.2395
+  type: 'test'
+  ...
+# Subtest: adapter sends the documented shape, records latency and token usage
+ok 54 - adapter sends the documented shape, records latency and token usage
+  ---
+  duration_ms: 32.2928
+  type: 'test'
+  ...
+# Subtest: malformed output retries once then explicit heuristic fallback
+ok 55 - malformed output retries once then explicit heuristic fallback
+  ---
+  duration_ms: 106.4436
+  type: 'test'
+  ...
+# Subtest: timeout is bounded and produces explicit fallback
+ok 56 - timeout is bounded and produces explicit fallback
+  ---
+  duration_ms: 185.4782
+  type: 'test'
+  ...
+# Subtest: authentication failure and long Retry-After are not hammered
+ok 57 - authentication failure and long Retry-After are not hammered
+  ---
+  duration_ms: 3.0792
+  type: 'test'
+  ...
+# Subtest: missing credentials, forced steps, and quota refusals are explicit
+ok 58 - missing credentials, forced steps, and quota refusals are explicit
+  ---
+  duration_ms: 1.7662
+  type: 'test'
+  ...
+# Subtest: every provider attempt, including the retry, reserves quota first
+ok 59 - every provider attempt, including the retry, reserves quota first
+  ---
+  duration_ms: 213.5863
+  type: 'test'
+  ...
+# Subtest: the encoded request and evidence never contain the solution grid or human information
+ok 60 - the encoded request and evidence never contain the solution grid or human information
+  ---
+  duration_ms: 1.1722
+  type: 'test'
+  ...
+# Subtest: provider-rounded distribution validates
+ok 61 - provider-rounded distribution validates
+  ---
+  duration_ms: 0.236
+  type: 'test'
+  ...
+# Subtest: genuinely inconsistent distribution is still rejected
+ok 62 - genuinely inconsistent distribution is still rejected
+  ---
+  duration_ms: 0.3993
+  type: 'test'
+  ...
+# Subtest: givens parsing and independent board arrays
+ok 63 - givens parsing and independent board arrays
+  ---
+  duration_ms: 1.2021
+  type: 'test'
+  ...
+# Subtest: 27-unit completion validation
+ok 64 - 27-unit completion validation
+  ---
+  duration_ms: 0.243
+  type: 'test'
+  ...
+# Subtest: human set, replacement, clear and undo are deterministic
+ok 65 - human set, replacement, clear and undo are deterministic
+  ---
+  duration_ms: 0.3379
+  type: 'test'
+  ...
+# Subtest: locally legal wrong guesses are allowed without an answer key
+ok 66 - locally legal wrong guesses are allowed without an answer key
+  ---
+  duration_ms: 0.1476
+  type: 'test'
+  ...
+# Subtest: immutable givens, peer conflicts, cell/digit bounds and no-op edits
+ok 67 - immutable givens, peer conflicts, cell/digit bounds and no-op edits
+  ---
+  duration_ms: 0.2136
+  type: 'test'
+  ...
+# Subtest: candidate masks and contradictions
+ok 68 - candidate masks and contradictions
+  ---
+  duration_ms: 0.4457
+  type: 'test'
+  ...
+# Subtest: solution counting rejects ambiguous and impossible grids
+ok 69 - solution counting rejects ambiguous and impossible grids
+  ---
+  duration_ms: 3.2349
+  type: 'test'
+  ...
+# Subtest: seeded unique puzzle generation is repeatable
+ok 70 - seeded unique puzzle generation is repeatable
+  ---
+  duration_ms: 6.4005
+  type: 'test'
+  ...
+# Subtest: human-first race settles only after its second bucket
+ok 71 - human-first race settles only after its second bucket
+  ---
+  duration_ms: 0.8751
+  type: 'test'
+  ...
+# Subtest: same-bucket finishes draw and pacing is validated
+ok 72 - same-bucket finishes draw and pacing is validated
+  ---
+  duration_ms: 2.2942
+  type: 'test'
+  ...
+# Subtest: JEV-first does not end human attempt or reveal ranked answers
+ok 73 - JEV-first does not end human attempt or reveal ranked answers
+  ---
+  duration_ms: 1.0339
+  type: 'test'
+  ...
+# Subtest: forfeit, timeout, void and monotonic time checks
+ok 74 - forfeit, timeout, void and monotonic time checks
+  ---
+  duration_ms: 0.9892
+  type: 'test'
+  ...
+# Subtest: revealing answers is an irreversible eligibility transition
+ok 75 - revealing answers is an irreversible eligibility transition
+  ---
+  duration_ms: 0.2842
+  type: 'test'
+  ...
+# Subtest: replay validates sequence, outcome, version and final state
+ok 76 - replay validates sequence, outcome, version and final state
+  ---
+  duration_ms: 1.947
+  type: 'test'
+  ...
+# Subtest: candidate caps and bounded preview budgets
+ok 77 - candidate caps and bounded preview budgets
+  ---
+  duration_ms: 23.0025
+  type: 'test'
+  ...
+# Subtest: all generated deduction effects preserve the independently computed solution
+ok 78 - all generated deduction effects preserve the independently computed solution
+  ---
+  duration_ms: 591.1646
+  type: 'test'
+  ...
+# Subtest: invalid proof or invented effect is rejected
+ok 79 - invalid proof or invented effect is rejected
+  ---
+  duration_ms: 1.0801
+  type: 'test'
+  ...
+# Subtest: naked pair and triple detectors produce elementary eliminations
+ok 80 - naked pair and triple detectors produce elementary eliminations
+  ---
+  duration_ms: 2.4132
+  type: 'test'
+  ...
+# Subtest: hidden pair detector and X-Wing detector
+ok 81 - hidden pair detector and X-Wing detector
+  ---
+  duration_ms: 2.2698
+  type: 'test'
+  ...
+# Subtest: branch snapshot restoration excludes the failed assumption
+ok 82 - branch snapshot restoration excludes the failed assumption
+  ---
+  duration_ms: 2.9169
+  type: 'test'
+  ...
+# Subtest: server and shared code use Web APIs only: no Node built-ins, no process, Buffer or long-lived timers
+ok 83 - server and shared code use Web APIs only: no Node built-ins, no process, Buffer or long-lived timers
+  ---
+  duration_ms: 3.8187
+  type: 'test'
+  ...
+# Subtest: wrangler.jsonc matches the free-plan constraints and the sibling deployment shape
+ok 84 - wrangler.jsonc matches the free-plan constraints and the sibling deployment shape
+  ---
+  duration_ms: 0.955
+  type: 'test'
+  ...
+# Subtest: the D1-compatible shim keeps D1 semantics: null misses, RETURNING, change counts and atomic batches
+ok 85 - the D1-compatible shim keeps D1 semantics: null misses, RETURNING, change counts and atomic batches
+  ---
+  duration_ms: 3.3907
+  type: 'test'
+  ...
+# Subtest: migrations are applied once, in order, to a file database and seed the practice pool
+ok 86 - migrations are applied once, in order, to a file database and seed the practice pool
+  ---
+  duration_ms: 47.8872
+  type: 'test'
+  ...
+# Subtest: a database file from the earlier container build is refused instead of being silently mixed with the new schema
+ok 87 - a database file from the earlier container build is refused instead of being silently mixed with the new schema
+  ---
+  duration_ms: 54.3889
+  type: 'test'
+  ...
+# Subtest: quota reservations are atomic fixed windows that refuse rather than overspend
+ok 88 - quota reservations are atomic fixed windows that refuse rather than overspend
+  ---
+  duration_ms: 10.0894
+  type: 'test'
+  ...
+# Subtest: the practice pool is unique-solution, distinct, and every transform preserves validity, clue count and uniqueness
+ok 89 - the practice pool is unique-solution, distinct, and every transform preserves validity, clue count and uniqueness
+  ---
+  duration_ms: 12.376
+  type: 'test'
+  ...
+# Subtest: the lazy maintenance sweep runs at most once per interval per isolate and once across isolates (D1 gate)
+ok 90 - the lazy maintenance sweep runs at most once per interval per isolate and once across isolates (D1 gate)
+  ---
+  duration_ms: 5.748
+  type: 'test'
+  ...
+# Subtest: API requests schedule the sweep through waitUntil and never through a timer
+ok 91 - API requests schedule the sweep through waitUntil and never through a timer
+  ---
+  duration_ms: 7.6786
+  type: 'test'
+  ...
+# Subtest: the local adapter serves the same Worker over real HTTP, with a path guard that holds on Windows separators
+ok 92 - the local adapter serves the same Worker over real HTTP, with a path guard that holds on Windows separators
+  ---
+  duration_ms: 89.9118
+  type: 'test'
+  ...
+# Subtest: the Discord interactions endpoint refuses unsigned requests before touching state
+ok 93 - the Discord interactions endpoint refuses unsigned requests before touching state
+  ---
+  duration_ms: 2.7728
+  type: 'test'
+  ...
+# Subtest: signed launch rejects modification, expiration and wrong audience
+ok 94 - signed launch rejects modification, expiration and wrong audience
+  ---
+  duration_ms: 7.5323
+  type: 'test'
+  ...
+# Subtest: launch signature is byte-compatible with the container-era format (base64url body, HMAC-SHA256)
+ok 95 - launch signature is byte-compatible with the container-era format (base64url body, HMAC-SHA256)
+  ---
+  duration_ms: 0.8897
+  type: 'test'
+  ...
+# Subtest: Discord Ed25519 verification (Web Crypto) binds timestamp and raw request bytes
+ok 96 - Discord Ed25519 verification (Web Crypto) binds timestamp and raw request bytes
+  ---
+  duration_ms: 3.1419
+  type: 'test'
+  ...
+# Subtest: CSRF requires origin and session-bound token; the activity origin only counts for bearer sessions
+ok 97 - CSRF requires origin and session-bound token; the activity origin only counts for bearer sessions
+  ---
+  duration_ms: 1.9849
+  type: 'test'
+  ...
+# Subtest: constant-time comparison rejects length differences and non-strings
+ok 98 - constant-time comparison rejects length differences and non-strings
+  ---
+  duration_ms: 0.1276
+  type: 'test'
+  ...
+# Subtest: rate limiter expires windows and bounds memory
+ok 99 - rate limiter expires windows and bounds memory
+  ---
+  duration_ms: 0.2744
+  type: 'test'
+  ...
+# Subtest: OAuth state, successful identity, rotated session and no token persistence
+ok 100 - OAuth state, successful identity, rotated session and no token persistence
+  ---
+  duration_ms: 8.3751
+  type: 'test'
+  ...
+# Subtest: OAuth adoption keeps a guest match with the player without changing its eligibility
+ok 101 - OAuth adoption keeps a guest match with the player without changing its eligibility
+  ---
+  duration_ms: 4.7415
+  type: 'test'
+  ...
+# Subtest: wrong-session or expired OAuth state is rejected before network access
+ok 102 - wrong-session or expired OAuth state is rejected before network access
+  ---
+  duration_ms: 3.8575
+  type: 'test'
+  ...
+# Subtest: launch redemption is subject-bound, expiring and one-use
+ok 103 - launch redemption is subject-bound, expiring and one-use
+  ---
+  duration_ms: 5.8155
+  type: 'test'
+  ...
+# Subtest: signed Discord command returns user-bound fragment link and rejects replay
+ok 104 - signed Discord command returns user-bound fragment link and rejects replay
+  ---
+  duration_ms: 7.0865
+  type: 'test'
+  ...
+# Subtest: start withholds initial clues until official start and a completed human race is verified against an independent replay
+ok 105 - start withholds initial clues until official start and a completed human race is verified against an independent replay
+  ---
+  duration_ms: 20.5927
+  type: 'test'
+  ...
+# Subtest: actions are owned, revision checked, idempotent and do not accept fabricated score fields
+ok 106 - actions are owned, revision checked, idempotent and do not accept fabricated score fields
+  ---
+  duration_ms: 5.702
+  type: 'test'
+  ...
+# Subtest: opponent steps are applied lazily at their scheduled time, not at the arrival time of the request that records them
+ok 107 - opponent steps are applied lazily at their scheduled time, not at the arrival time of the request that records them
+  ---
+  duration_ms: 17.0854
+  type: 'test'
+  ...
+# Subtest: a request applies at most stepBudget due steps and reports that the opponent is behind
+ok 108 - a request applies at most stepBudget due steps and reports that the opponent is behind
+  ---
+  duration_ms: 16.4674
+  type: 'test'
+  ...
+# Subtest: a human action waits for every opponent step that was already due, and is then ordered after them
+ok 109 - a human action waits for every opponent step that was already due, and is then ordered after them
+  ---
+  duration_ms: 14.0473
+  type: 'test'
+  ...
+# Subtest: the decision lease lets exactly one request spend a provider call per board, and a dead lease can be retaken
+ok 110 - the decision lease lets exactly one request spend a provider call per board, and a dead lease can be retaken
+  ---
+  duration_ms: 8.9527
+  type: 'test'
+  ...
+# Subtest: append is compare-and-swap: a stale writer loses, a repeated request id is idempotent, and tampered state is refused
+ok 111 - append is compare-and-swap: a stale writer loses, a repeated request id is idempotent, and tampered state is refused
+  ---
+  duration_ms: 7.0634
+  type: 'test'
+  ...
+# Subtest: ranked analytics and public projection do not leak opponent answers
+ok 112 - ranked analytics and public projection do not leak opponent answers
+  ---
+  duration_ms: 9.1969
+  type: 'test'
+  ...
+# Subtest: the model never receives hidden state: no solution grid, no human board, history or result
+ok 113 - the model never receives hidden state: no solution grid, no human board, history or result
+  ---
+  duration_ms: 7.158
+  type: 'test'
+  ...
+# Subtest: provider failure downgrades before the heuristic move and is never labelled jev
+ok 114 - provider failure downgrades before the heuristic move and is never labelled jev
+  ---
+  duration_ms: 6.991
+  type: 'test'
+  ...
+# Subtest: the daily and hourly provider quotas are reserved in D1 and exhaustion falls back explicitly
+ok 115 - the daily and hourly provider quotas are reserved in D1 and exhaustion falls back explicitly
+  ---
+  duration_ms: 10.873
+  type: 'test'
+  ...
+# Subtest: abandoned active attempts are voided when touched and by the lazy sweep, and their result is recorded
+ok 116 - abandoned active attempts are voided when touched and by the lazy sweep, and their result is recorded
+  ---
+  duration_ms: 12.8335
+  type: 'test'
+  ...
+# Subtest: the time limit ends an attempt at exactly the limit, after every opponent step that was due before it
+ok 117 - the time limit ends an attempt at exactly the limit, after every opponent step that was due before it
+  ---
+  duration_ms: 7.3728
+  type: 'test'
+  ...
+# Subtest: finalization refuses a ranked match containing a non-model decision, and records the failed verification
+ok 118 - finalization refuses a ranked match containing a non-model decision, and records the failed verification
+  ---
+  duration_ms: 8.2147
+  type: 'test'
+  ...
+# Subtest: a ranked race with a real model call is verified end to end and appears on the leaderboard
+ok 119 - a ranked race with a real model call is verified end to end and appears on the leaderboard
+  ---
+  duration_ms: 12.8629
+  type: 'test'
+  ...
+# Subtest: ranked needs a signed-in player, a configured model and a published challenge
+ok 120 - ranked needs a signed-in player, a configured model and a published challenge
+  ---
+  duration_ms: 5.3524
+  type: 'test'
+  ...
+# Subtest: official attempt reservation survives deletion as a short-lived keyed tombstone
+ok 121 - official attempt reservation survives deletion as a short-lived keyed tombstone
+  ---
+  duration_ms: 3.5379
+  type: 'test'
+  ...
+# Subtest: creation is idempotent, single-active per session and per account, and bounded by the global active limit
+ok 122 - creation is idempotent, single-active per session and per account, and bounded by the global active limit
+  ---
+  duration_ms: 8.363
+  type: 'test'
+  ...
+# Subtest: practice puzzles come from the verified pool with a per-match transform and record their source
+ok 123 - practice puzzles come from the verified pool with a per-match transform and record their source
+  ---
+  duration_ms: 3.7886
+  type: 'test'
+  ...
+# Subtest: an empty puzzle pool is a clear 503, never a silent generator run
+ok 124 - an empty puzzle pool is a clear 503, never a silent generator run
+  ---
+  duration_ms: 3.1716
+  type: 'test'
+  ...
+# Subtest: channel/server/world leaderboards, tied ranks and pagination
+ok 125 - channel/server/world leaderboards, tied ranks and pagination
+  ---
+  duration_ms: 4.9326
+  type: 'test'
+  ...
+# Subtest: operator reports make empty data and coverage explicit, and count real matches from SQL aggregates
+ok 126 - operator reports make empty data and coverage explicit, and count real matches from SQL aggregates
+  ---
+  duration_ms: 6.2423
+  type: 'test'
+  ...
+# Subtest: expired ready reservations do not permanently block starting another game
+ok 127 - expired ready reservations do not permanently block starting another game
+  ---
+  duration_ms: 3.8906
+  type: 'test'
+  ...
+# Subtest: a lazy sweep retries a finished match whose result was never written
+ok 128 - a lazy sweep retries a finished match whose result was never written
+  ---
+  duration_ms: 5.0932
+  type: 'test'
+  ...
+# Subtest: sweeps purge expired sessions, tokens and quota windows in bounded batches
+ok 129 - sweeps purge expired sessions, tokens and quota windows in bounded batches
+  ---
+  duration_ms: 2.7288
+  type: 'test'
+  ...
+# Subtest: client telemetry past retention is purged, provider usage is kept, and reports rebuild from what remains
+ok 130 - client telemetry past retention is purged, provider usage is kept, and reports rebuild from what remains
+  ---
+  duration_ms: 7.7082
+  type: 'test'
+  ...
+# Subtest: a stored result is a small state-derived summary with provider usage, and late provider telemetry refreshes it
+ok 131 - a stored result is a small state-derived summary with provider usage, and late provider telemetry refreshes it
+  ---
+  duration_ms: 5.2123
+  type: 'test'
+  ...
+1..131
+# tests 131
+# suites 0
+# pass 131
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2565.2878

@@ -1,172 +1,154 @@
-# Deployment and operations
+# Deployment (Cloudflare Workers + D1, free plan)
 
-## 1. Local smoke
+JEV Sudoku runs as one Cloudflare Worker with a D1 database and static assets, served at **https://sudoku.jevplay.games**. It
+needs no server, no container and no paid plan. The earlier Docker/Caddy/systemd and GoDaddy Node deployments were removed
+(they remain in git history); nothing in this document depends on them. The same handler runs locally through `npm start`.
 
-```bash
-cp .env.example .env
-npm start
+Read [WORKERS.md](WORKERS.md) first if you want to know *why* it is built this way (no timers, lazy scheduling, CPU and
+query budgets, what happens to an abandoned match). This page is the operator checklist.
+
+## What is deployed
+
+| Piece | Where |
+|---|---|
+| Worker (`server/worker.js`, `wrangler.jsonc`) | name `jev-sudoku`, custom domain `sudoku.jevplay.games` |
+| Database | D1 `jev-sudoku` (binding `DB`), schema in `migrations/` |
+| Static game | `public/` through the `ASSETS` binding; the Worker sees `/api/*` and `/` only (`run_worker_first`) |
+| Crons / Durable Objects / containers | none (the account's five free cron triggers are already used) |
+
+## One-time setup
+
+Run these from the repository root (`jev-sudoku/`). `npm run deploy` and the `db:*` scripts call `npx wrangler@4.35.0`, so no
+install is needed. Log in once with `npx wrangler login`.
+
+1. **Create the database**
+
+   ```sh
+   npx wrangler d1 create jev-sudoku
+   ```
+
+   Copy the printed `database_id` over `REPLACE_WITH_D1_ID` in `wrangler.jsonc`.
+
+2. **Apply the migrations** (schema plus the 300-puzzle practice pool)
+
+   ```sh
+   npm run db:remote
+   ```
+
+3. **Set secrets** (never in `wrangler.jsonc`, never in git). Names only here:
+
+   | Name | Required | Purpose |
+   |---|---|---|
+   | `LAUNCH_SIGNING_KEY` | yes | 32+ random characters; signs Discord launch links and derives quota keys. Generate with `node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"`. The Worker refuses to serve (503 `configuration_invalid`) without it on a public origin. |
+   | `TYPESAFE_API_KEY` | for live JEV and ranked play | Sent only to `https://api.typesafe.ai/v1/systemone`. Without it the opponent is the labeled local heuristic and every game is practice. |
+   | `DISCORD_CLIENT_SECRET` | for Discord sign-in | OAuth code exchange (also used by Activity sign-in). |
+   | `ADMIN_ANALYTICS_TOKEN` | optional | Bearer token for `GET /api/analytics/operator`. |
+
+   ```sh
+   npx wrangler secret put LAUNCH_SIGNING_KEY      # repeat for each name above
+   ```
+
+   `DISCORD_CLIENT_ID`, `DISCORD_PUBLIC_KEY` and `ADMIN_DISCORD_IDS` (comma-separated user IDs) are not secret; set them with
+   `wrangler secret put` or add them to `vars` in `wrangler.jsonc`.
+
+   Tunable `vars` already in `wrangler.jsonc`: `APP_ORIGIN`, `JEV_MODEL` (`jev-1.13.0`), `PRACTICE_PACING_MS`,
+   `MAX_ACTIVE_MATCHES`, `MAX_JEV_CALLS_PER_DAY`, `JEV_CALLS_PER_HOUR`, `MAX_JEV_REQUESTS_PER_MATCH`, `ABANDONED_AFTER_MS`,
+   `TELEMETRY_RETENTION_DAYS`, `OPERATIONS_RETENTION_DAYS`. Optional: `JEV_TIMEOUT_MS`, `MAX_MATCH_EVENTS`,
+   `JEV_INPUT_USD_PER_MILLION` / `JEV_OUTPUT_USD_PER_MILLION` (both blank means unknown cost, never zero), `ADMIN_DISCORD_IDS`.
+   Full list with defaults: `.env.example`.
+
+4. **Deploy**
+
+   ```sh
+   npm run deploy
+   ```
+
+   The `routes` entry (`custom_domain: true`) creates the DNS record and certificate for `sudoku.jevplay.games` on deploy, provided the
+   `jevplay.games` zone is on the same Cloudflare account. If DNS for the zone is still elsewhere, move it first.
+
+5. **Publish ranked daily puzzles** (only needed for ranked play). They are secret until played, so they are generated locally and
+   loaded with `INSERT OR IGNORE` (never overwriting an existing day). Do not commit the file.
+
+   ```sh
+   npm run puzzles -- --date 2026-10-01 --days 14 --sql .data/challenges.sql
+   npx wrangler d1 execute jev-sudoku --remote --file .data/challenges.sql
+   ```
+
+   Ranked mode reports `daily_challenge_not_published` when today's puzzle for a difficulty is missing. Put a reminder in your
+   calendar: there is no scheduler to publish more.
+
+6. **Discord** (only if you use community features)
+   - Interactions Endpoint URL: `https://sudoku.jevplay.games/api/discord/interactions` (Discord sends a signed ping; the Worker
+     verifies it with Web Crypto and `DISCORD_PUBLIC_KEY`).
+   - OAuth2 redirect: `https://sudoku.jevplay.games/api/auth/discord/callback`, scope `identify`.
+   - Register the slash command from your machine with the same variables in `.env`: `npm run discord:register`
+     (`DISCORD_TEST_GUILD_ID` limits it to one guild for instant registration).
+   - Activity mode: see [ACTIVITY.md](ACTIVITY.md) (URL mapping `/` to `sudoku.jevplay.games`).
+   - `LAUNCH_SIGNING_KEY` must not change while launch links are outstanding (they live ten minutes).
+
+7. **Verify**
+
+   ```sh
+   curl https://sudoku.jevplay.games/api/health            # {"status":"ok","runtime":"workers"}
+   curl -s -o /dev/null -w "%{http_code}\n" https://sudoku.jevplay.games/api/analytics/operator   # 403
+   ```
+
+   Then play a practice game in a browser (the page polls once a second while a race runs). For ranked play, do one real game
+   with your key and confirm the decisions are labeled `jev` in Analytics before opening it to others. A configured key is not
+   proof of healthy provider access.
+
+## Everyday operations
+
+| Task | Command |
+|---|---|
+| Deploy a change | `npm test && npm run deploy` |
+| New migration | add `migrations/0003_name.sql`, then `npm run db:remote` (apply before deploying code that needs it) |
+| Live logs | `npx wrangler tail jev-sudoku` |
+| Roll back the Worker | `npx wrangler rollback` (database migrations are not rolled back) |
+| Back up D1 | `npx wrangler d1 export jev-sudoku --remote --output backup.sql` (contains player data; keep it private) |
+| Operator analytics | `curl -H "Authorization: Bearer $ADMIN_ANALYTICS_TOKEN" "https://sudoku.jevplay.games/api/analytics/operator?days=30"` (cached five minutes; add `&fresh=1` to bypass) |
+| Inspect a table | `npx wrangler d1 execute jev-sudoku --remote --command "SELECT COUNT(*) FROM matches"` |
+
+Retention and cleanup run **lazily**: a request to a light endpoint occasionally runs one bounded sweep (at most once a minute, gated
+by a row in `meta`) that voids abandoned matches, retries a finished match whose result write failed, and purges expired sessions,
+tokens, quota windows, operations and optional telemetry. There is nothing to schedule and nothing to monitor beyond the free-plan
+dashboards. If traffic is zero, nothing is cleaned up, and nothing needs to be.
+
+## Free-plan limits this design lives inside
+
+| Limit (Workers Free / D1 Free) | How the design respects it |
+|---|---|
+| 10 ms CPU per request | Hot paths measured at 0.2 to 6 ms; see [WORKERS.md](WORKERS.md) for the numbers and the paths that are over |
+| 50 queries per invocation | Opponent steps applied per request are capped by profile; tests count statements per invocation |
+| 100,000 requests per day | The game polls once a second in a visible tab (4 s hidden) only while a race is running. Ten minutes of play is about 600 requests, so budget roughly 150 such games a day |
+| D1 100,000 rows written per day, 5 M read | A full game writes a few hundred rows; retention sweeps keep tables small. Watch the D1 dashboard if you open ranked play widely |
+| 5 cron triggers per account | Not used |
+| 128 MB memory | The largest object handled is one game's event log (about 1 MB for a long `jev`-profile game) |
+
+If usage outgrows the free plan the code does not change; the limits do. The provider quotas (`MAX_JEV_CALLS_PER_DAY`,
+`JEV_CALLS_PER_HOUR`, `MAX_JEV_REQUESTS_PER_MATCH`) are the spend controls: when a quota is exhausted the opponent falls back to the
+labeled heuristic and the game becomes practice, it never blocks and never relabels the decision.
+
+## Local development
+
+```sh
+cp .env.example .env      # optional
+npm start                 # http://localhost:3000, database .data/sudoku.sqlite, Node >= 22.16
+npm test
 ```
 
-Use `http://localhost:3000`, matching `APP_ORIGIN` exactly. `127.0.0.1` and `localhost` are different origins. The server starts without secrets, creates `data/arcade.sqlite`, and labels the opponent Local heuristic. Empty leaderboards are expected without published challenges and verified authenticated results.
+`npm start` runs `local/server.js`: a small Node adapter that turns `http` requests into the Worker's `handle(request, env, ctx)` call,
+serves `public/` as `env.ASSETS`, and provides `env.DB` from `node:sqlite` behind a D1-compatible interface (`prepare().bind().first()/all()/run()`,
+`batch()`). The migrations in `migrations/` are applied on open, so local and Cloudflare databases have the same schema. A
+database file written by the old container build is refused with a clear message; point `DATABASE_PATH` at a new file.
 
-Node22.16.0 was exercised for this package. Node24 is the Docker target but was not run in this environment. Pin a tested patch version/image digest in your deployment after staging validation. The bundled SQLite API can emit a stability warning; persistence is isolated in `server/db.js`.
+Wrangler's own local mode also works (`npm run db:local`, then `npx wrangler dev`) but is not required.
 
-## 2. Production settings
+Local ranked play needs `TYPESAFE_API_KEY`, a Discord application and `npm run puzzles -- --days 3`.
 
-Set these in a protected `.env` outside source control:
+## Historical note
 
-```dotenv
-NODE_ENV=production
-HOST=0.0.0.0
-PORT=3000
-APP_ORIGIN=https://sudoku.example.com
-GAME_DOMAIN=sudoku.example.com
-DATABASE_PATH=/app/data/arcade.sqlite
-LAUNCH_SIGNING_KEY=REPLACE_WITH_RANDOM_SECRET
-TYPESAFE_API_KEY=REPLACE_WITH_YOUR_KEY
-JEV_MODEL=jev-1.13.0
-DISCORD_CLIENT_ID=YOUR_APPLICATION_ID
-DISCORD_CLIENT_SECRET=YOUR_CLIENT_SECRET
-DISCORD_PUBLIC_KEY=YOUR_INTERACTIONS_PUBLIC_KEY
-ADMIN_DISCORD_IDS=YOUR_DISCORD_USER_ID
-```
-
-The hostname and placeholders are examples, not provisioned resources. Generate a signing key locally:
-
-```bash
-node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"
-```
-
-Production startup rejects non-HTTPS origins and missing/short signing keys. Keep the key stable across restarts; it signs launch context and keys daily-attempt tombstones. A key rotation intentionally invalidates outstanding launches and changes tombstone derivation, so rotate with ranked play closed or after a challenge boundary.
-
-The browser never needs `TYPESAFE_API_KEY`, `DISCORD_CLIENT_SECRET`, an operator bearer token or a signing key. Do not paste them into public JavaScript, query strings, screenshots or committed files.
-
-## 3. Discord application
-
-In your Discord application configuration, register exactly:
-
-```
-https://sudoku.example.com/api/auth/discord/callback
-```
-
-as the OAuth redirect, and:
-
-```
-https://sudoku.example.com/api/discord/interactions
-```
-
-as the interactions endpoint. Replace the domain consistently. Set the public key from that same application. The endpoint implements signed PING and command requests; expose it over HTTPS before saving the endpoint configuration.
-
-Register the `/jev sudoku` command:
-
-```bash
-npm run discord:register
-```
-
-An optional `DISCORD_TEST_GUILD_ID` selects a guild-scoped registration during staging; omit it for global registration. The script uses an application access token with `applications.commands.update`, creates/updates this command without replacing the application's unrelated commands, and does not persist the access token. The command launch uses `applications.commands`; it does not require a message-reading bot or Gateway process.
-
-Install the application's command in a participating server using Discord's application installation flow. A player's browser login requests `identify` only. A signed command interaction binds guild/channel/user context; a browser OAuth login alone cannot establish channel context.
-
-Test both a direct login (World only) and a channel invocation. Confirm a launch shared with a different user is rejected and repeated token redemption fails. Tokens expire after ten minutes; redeemed context lasts one hour. DM command launches are not the MVP path.
-
-No real Discord credentials were available during package testing. Registration, installation and public callbacks must be exercised in your application before public launch.
-
-## 4. TypeSafe JEV
-
-Set the API key and pinned model, restart, and verify the game no longer advertises local-only capabilities. The server uses the documented `POST /v1/systemone` typed Choice protocol with a finite candidate set and no arbitrary user prompt.
-
-Confirm actual report records have `source=jev`, the expected model, a validated candidate distribution, request latency and reported usage. A forced single-candidate step is correctly labeled forced and does not call the API. A configured-but-invalid key produces a visible fallback and practice downgrade; it does not produce official ranked wins against a fake JEV.
-
-Defaults: eight simultaneous outbound requests, two-second per-attempt timeout, up to one bounded retry, at most600 provider requests per web match,20 active reservations/matches. A fallback is permanent for the attempt. Per-match bounds are not a provider-wide spending cap; configure provider limits and restrict public access as appropriate.
-
-Cost estimates are optional. Set both `JEV_INPUT_USD_PER_MILLION` and `JEV_OUTPUT_USD_PER_MILLION` to your own documented rate snapshot. Leave them blank rather than guessing. The app reports `null` when usage is incomplete.
-
-## 5. Daily challenge publication
-
-Publish in advance:
-
-```bash
-npm run puzzles -- --days 7
-npm run puzzles -- --date 2026-09-22 --days 7
-```
-
-The default start date is the current UTC date; the explicit date above is only a reproducible example. Each date gets four independent unique puzzles, one per opponent profile. Seeds remain private in SQLite. Existing challenges are not overwritten. A previously published challenge with another model is rejected rather than silently mixing model versions.
-
-Arrange a deployment scheduler to keep future dates available. The package does not silently create cron jobs. Publication verifies uniqueness, not an externally standardized human difficulty grade. The generator targets36 clues and records actual clue counts.
-
-## 6. Docker Compose
-
-Install Docker/Compose on the host, point your DNS hostname at it, and allow inbound80/443. With the production `.env` set:
-
-```bash
-docker compose up -d --build
-docker compose exec app node scripts/puzzles.js --days 7
-docker compose exec app node scripts/maintenance.js --integrity
-```
-
-The app's database is in the persistent `arcade-data` volume. Caddy handles the public origin; the Node port is exposed to the Compose network, not published directly to the internet. Caddy certificates/configuration use separate persistent volumes.
-
-These templates were not launched in the build environment. Validate volume permissions, healthcheck behavior, DNS/TLS, graceful stop behavior and backups in staging. `docker compose down -v` destroys volumes; do not use it on a production dataset unintentionally.
-
-The optional systemd unit assumes `/opt/jev-sudoku`, a dedicated `jev` user, and Node at `/usr/bin/node`. Adapt paths explicitly. The supplied Caddyfile's upstream `app:3000` is for Compose; on a same-host systemd deployment change it to `127.0.0.1:3000` and configure the hostname in your Caddy environment.
-
-## 7. Operational reporting
-
-Allowlist operator Discord IDs to enable the in-page operator section. Alternatively set `ADMIN_ANALYTICS_TOKEN` and call the read-only report endpoint from an operator environment:
-
-```bash
-curl --fail -H "Authorization: Bearer $ADMIN_ANALYTICS_TOKEN" \
-  "https://sudoku.example.com/api/analytics/operator?days=30"
-```
-
-Do not store that bearer token in browser localStorage. CLI reports require local database access:
-
-```bash
-npm run analytics -- --days 30 --out reports/operator.json
-npm run analytics -- --match MATCH_ID --out reports/completed-match.json
-```
-
-HTTP metrics are application-handler observations, not a replacement for host CPU, disk, TLS and upstream monitoring. `/healthz` reports liveness/draining, not the readiness of Discord or the paid JEV account.
-
-## 8. Backup, retention and restoration
-
-Create a consistent SQLite backup to a new destination:
-
-```bash
-npm run maintenance -- --backup backups/arcade-2026-09-22.sqlite
-npm run maintenance -- --integrity
-npm run maintenance -- --purge
-```
-
-The backup command refuses to overwrite an existing file and uses `VACUUM INTO`. In Compose, write into a persistent mounted directory and copy the backup to separately secured storage. Do not rely on the ephemeral container layer as backup storage.
-
-Configure a scheduler for `--purge`. Defaults delete optional browser and operational observations older than30 days, along with expired session/security tokens. Retained provider usage/core replay evidence remains with the result. Affected browser-derived saved reports are recomputed from retained raw evidence.
-
-To restore: stop/drain the app, preserve the previous database safely, restore a tested backup to the configured path with correct ownership, and ensure no mismatched old WAL/SHM files remain alongside it. Start once, run integrity/foreign-key checks, and inspect an existing replay/result. Active games in a restored backup are voided on recovery rather than restarted with fabricated timing.
-
-Backups contain identities, gameplay and possibly detailed telemetry. Encrypt/access-control them, define an expiry policy, and account for user deletion requests in that policy. The in-app delete cannot erase external operator-made backup copies.
-
-## 9. Draining and failure handling
-
-SIGTERM/SIGINT first stops accepting new matches and waits for active games to end. A second signal forces shutdown. Compose allows61 minutes of stop grace for60-minute games. Unexpected restarts recover durable state but mark active attempts void; daily attempts remain consumed.
-
-A ready reservation expires after five minutes or its UTC challenge date boundary. This prevents abandoned countdowns from occupying capacity indefinitely. An event cap or internal verification issue produces an explicit void/failure, not a leaderboard entry.
-
-Do not run multiple independent schedulers over the same database. This release has one authoritative process and a local SQLite volume. Horizontal replication requires a new coordinated scheduling/storage design.
-
-## 9a. GoDaddy Node.js hosting
-
-The app is a plain Node server and runs unchanged on GoDaddy Node hosting (Node 22.16+; the platform runs `npm run build`, then `npm start`).
-
-- Zip layout: repository root contents (`package.json`, `server/`, `shared/`, `public/`, `db/`) plus a production `.env` at the zip root. `npm start` loads it through `--env-file-if-exists=.env`; real process env vars, including the platform-injected `PORT`, win over the file, so leave `PORT` out of `.env`.
-- `npm run build` is a no-op (there is no build step).
-- Required env: `NODE_ENV=production`, `HOST=0.0.0.0`, `APP_ORIGIN` (HTTPS public origin), `LAUNCH_SIGNING_KEY` (32+ chars), `DATABASE_PATH` (private relative path such as `data/sudoku.sqlite`; the directory is created on start and is never served, only `public/` is). Also `TYPESAFE_API_KEY`, `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET`, `DISCORD_PUBLIC_KEY`, `ADMIN_DISCORD_IDS` as needed. `GAME_DOMAIN` is used only by Docker Compose/Caddy. Keep `TRUST_PROXY=0` unless the proxy is loopback; origin and CSRF checks are unchanged.
-- Production mode (HSTS, Secure cookies, required `LAUNCH_SIGNING_KEY`, HTTPS-only origin, default bind `0.0.0.0`) is on when `NODE_ENV=production` or when `APP_ORIGIN` is HTTPS with a non-loopback host, because GoDaddy may override `NODE_ENV`.
-- The filesystem is ephemeral: the SQLite database, results and leaderboards are lost on redeploy or host recycle. Active attempts are voided on recovery as usual.
-- `SHUTDOWN_GRACE_MS` (for example `25000`) caps the SIGTERM drain so platform restarts cannot hang; when unset the drain waits for active games as described in section 9.
-
-## 10. Staging acceptance
-
-Verify an ordinary desktop/mobile browser can load the app with its CSP, create a guest game, receive native EventSource updates, survive reconnect, complete a puzzle, export analytics, and replay it. Then test Discord login/context, real JEV choices, ranked redaction, provider failure downgrade and scoped results.
-
-Run backup restoration and inspect privacy behavior. Conduct load tests at your actual machine/network capacity. The included smoke benchmark and browser harness are not evidence of public-internet capacity, full accessibility compliance or penetration-test certification.
+Earlier revisions were deployed as a Docker container behind Caddy (and once to GoDaddy Node hosting) with an in-process match
+scheduler and a 60-minute drain on shutdown. Those files, the `SHUTDOWN_GRACE_MS`, `HOST`, `GAME_DOMAIN`, `NODE_ENV` and
+`MAX_OUTBOUND_JEV_REQUESTS` settings, and the `/healthz` and `/api/matches/:id/events` (SSE) routes no longer exist. There is no data
+migration: the Cloudflare database starts empty, and container-era SQLite files are not compatible.

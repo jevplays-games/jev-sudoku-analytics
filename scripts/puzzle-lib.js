@@ -1,4 +1,4 @@
-import { candidateMask,digits,countSolutions } from '../shared/sudoku.js';
+import { candidateMask,digits,countSolutions } from '../public/shared/sudoku.js';
 /** Seeded generator for reproducible publishing; never sent to ranked clients. */
 export function rng(seed) {
   let h=2166136261;for(const c of String(seed)){h^=c.charCodeAt(0);h=Math.imul(h,16777619);}
