@@ -6,7 +6,7 @@
   // Workers Free: no cron triggers (the account-wide limit of five is used), no custom CPU limit, no Durable Objects, no containers.
   "routes": [{ "pattern": "sudoku.jevplay.games", "custom_domain": true }],
   "assets": { "directory": "./public", "binding": "ASSETS", "run_worker_first": ["/api/*", "/"] },
-  "d1_databases": [{ "binding": "DB", "database_name": "jev-sudoku", "database_id": "REPLACE_WITH_D1_ID", "migrations_dir": "migrations" }],
+  "d1_databases": [{ "binding": "DB", "database_name": "jev-sudoku", "database_id": "846ce4fe-69d3-4a59-8dc3-5e41897a9553", "migrations_dir": "migrations" }],
   // Secrets are set with `wrangler secret put` and never live here: TYPESAFE_API_KEY, LAUNCH_SIGNING_KEY, DISCORD_CLIENT_SECRET,
   // ADMIN_ANALYTICS_TOKEN. DISCORD_CLIENT_ID, DISCORD_PUBLIC_KEY and ADMIN_DISCORD_IDS are not secret; set them as secrets or add them here.
   "vars": {
