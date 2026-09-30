@@ -154,6 +154,16 @@ A ready reservation expires after five minutes or its UTC challenge date boundar
 
 Do not run multiple independent schedulers over the same database. This release has one authoritative process and a local SQLite volume. Horizontal replication requires a new coordinated scheduling/storage design.
 
+## 9a. GoDaddy Node.js hosting
+
+The app is a plain Node server and runs unchanged on GoDaddy Node hosting (Node 22.16+; the platform runs `npm run build`, then `npm start`).
+
+- Zip layout: repository root contents (`package.json`, `server/`, `shared/`, `public/`, `db/`) plus a production `.env` at the zip root. `npm start` loads it through `--env-file-if-exists=.env`; real process env vars, including the platform-injected `PORT`, win over the file, so leave `PORT` out of `.env`.
+- `npm run build` is a no-op (there is no build step).
+- Required env: `NODE_ENV=production`, `HOST=0.0.0.0`, `APP_ORIGIN` (HTTPS public origin), `LAUNCH_SIGNING_KEY` (32+ chars), `DATABASE_PATH` (private relative path such as `data/sudoku.sqlite`; the directory is created on start and is never served, only `public/` is). Also `TYPESAFE_API_KEY`, `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET`, `DISCORD_PUBLIC_KEY`, `ADMIN_DISCORD_IDS` as needed. `GAME_DOMAIN` is used only by Docker Compose/Caddy. Keep `TRUST_PROXY=0` unless the proxy is loopback; origin and CSRF checks are unchanged.
+- The filesystem is ephemeral: the SQLite database, results and leaderboards are lost on redeploy or host recycle. Active attempts are voided on recovery as usual.
+- `SHUTDOWN_GRACE_MS` (for example `25000`) caps the SIGTERM drain so platform restarts cannot hang; when unset the drain waits for active games as described in section 9.
+
 ## 10. Staging acceptance
 
 Verify an ordinary desktop/mobile browser can load the app with its CSP, create a guest game, receive native EventSource updates, survive reconnect, complete a puzzle, export analytics, and replay it. Then test Discord login/context, real JEV choices, ranked redaction, provider failure downgrade and scoped results.
