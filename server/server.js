@@ -6,12 +6,13 @@ import { loadConfig } from './config.js';
 import { openDb,readEvents,readTelemetry,readMatch,transaction } from './db.js';
 import { MatchService } from './matches.js';
 import { getSession,issueSession,sessionCookie,requireCsrf,RateLimiter,httpError,hash,same } from './security.js';
-import { startOAuth,finishOAuth,redeemContext,handleInteraction } from './auth.js';
+import { startOAuth,finishOAuth,redeemContext,handleInteraction,activityConfig,activitySession } from './auth.js';
 import { track,operation,validateClientEvent } from './telemetry.js';
 import { leaderboard,personalReports,operatorReport } from './reports.js';
 import { toCsv } from '../shared/analytics.js';
 const staticFiles=new Map([
   ['/', ['public/index.html','text/html; charset=utf-8']],['/index.html',['public/index.html','text/html; charset=utf-8']],
+  ['/activity.js',['public/activity.js','text/javascript; charset=utf-8']],['/vendor/discord-embedded-app-sdk.js',['public/vendor/discord-embedded-app-sdk.js','text/javascript; charset=utf-8']],
   ['/game.css',['public/game.css','text/css; charset=utf-8']],['/game.js',['public/game.js','text/javascript; charset=utf-8']],
   ['/analytics-ui.js',['public/analytics-ui.js','text/javascript; charset=utf-8']],
   ['/brand/brand.css',['public/brand/brand.css','text/css; charset=utf-8']],['/brand/brand.js',['public/brand/brand.js','text/javascript; charset=utf-8']],
@@ -19,6 +20,9 @@ const staticFiles=new Map([
   ['/brand/inter-var.woff2',['public/brand/inter-var.woff2','font/woff2']],['/brand/OFL.txt',['public/brand/OFL.txt','text/plain; charset=utf-8']],
   ...['sudoku','sudoku-ai','match','replay','analytics'].map(n=>[`/shared/${n}.js`,[`shared/${n}.js`,'text/javascript; charset=utf-8']])
 ]);
+// Discord shows an Activity inside its own iframe. Only a document loaded with Discord's frame_id may be framed, and only by Discord.
+const ACTIVITY_FRAME_ANCESTORS='frame-ancestors https://discord.com https://ptb.discord.com https://canary.discord.com';
+const isFramedDocument=req=>{try{const url=new URL(req.url,'http://x');return !url.pathname.startsWith('/api/')&&url.searchParams.has('frame_id');}catch{return false;}};
 const normalizeRoute=path=>path.replace(/\/api\/matches\/[^/]+/,'/api/matches/:id');
 const json=(res,status,body)=>{res.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'});res.end(JSON.stringify(body));};
 async function readBody(req,limit=65536){const chunks=[];let size=0;for await(const chunk of req){size+=chunk.length;if(size>limit)throw httpError(413,'request_too_large');chunks.push(chunk);}return Buffer.concat(chunks);}
@@ -30,6 +34,7 @@ export function createApp({config=loadConfig(),db=openDb(config.database),fetchI
     const started=performance.now();let path='unknown';
     res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Referrer-Policy','no-referrer');res.setHeader('X-Frame-Options','DENY');
     res.setHeader('Content-Security-Policy',"default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'");
+    if(isFramedDocument(req)){res.removeHeader('X-Frame-Options');res.setHeader('Content-Security-Policy',res.getHeader('Content-Security-Policy').replace("frame-ancestors 'none'",ACTIVITY_FRAME_ANCESTORS));}
     res.setHeader('Permissions-Policy','camera=(), microphone=(), geolocation=()');
     if(config.production)res.setHeader('Strict-Transport-Security','max-age=31536000; includeSubDomains');
     res.on('finish',()=>{if(path.startsWith('/api/')&&!path.endsWith('/events')&&!service.closed)operation(db,'http_request',{route:normalizeRoute(path),method:req.method,status:res.statusCode,durationMs:performance.now()-started});});
@@ -44,6 +49,11 @@ export function createApp({config=loadConfig(),db=openDb(config.database),fetchI
         res.writeHead(200,{'Content-Type':type,'Cache-Control':path==='/'?'no-cache':'public, max-age=300'});res.end(bytes);return;
       }
       if(path==='/api/discord/interactions'&&req.method==='POST'){const raw=await readBody(req);json(res,200,handleInteraction(db,config,req,raw));return;}
+      if(path==='/api/activity/config'&&req.method==='GET'){json(res,200,activityConfig(config));return;}
+      if(path==='/api/activity/session'&&req.method==='POST'){
+        if(!rate.allow(`activity-session:${remote}`,300,3600000))throw httpError(429,'session_rate_limit');
+        json(res,200,await activitySession(db,config,req.headers.origin,(await readJson(req)).code,fetchImpl));return;
+      }
       let session=getSession(db,req);
       if(path==='/api/me'&&req.method==='GET'){
         if(!session){const issued=issueSession(db);session=issued.row;res.setHeader('Set-Cookie',sessionCookie(issued.raw,config.production));}
@@ -72,7 +82,7 @@ export function createApp({config=loadConfig(),db=openDb(config.database),fetchI
         json(res,200,operatorReport(db,{days:Number(url.searchParams.get('days')||30),difficulty:url.searchParams.get('difficulty')}));return;
       }
       if(!session)throw httpError(401,'session_required');
-      if(['POST','DELETE','PATCH'].includes(req.method))requireCsrf(req,session,config.origin);
+      if(['POST','DELETE','PATCH'].includes(req.method))requireCsrf(req,session,config.origin,config.activityOrigin);
       if(path==='/api/logout'&&req.method==='POST'){db.prepare('DELETE FROM sessions WHERE hash=?').run(session.hash);res.setHeader('Set-Cookie',sessionCookie('',config.production,0));json(res,200,{ok:true});return;}
       if(path==='/api/context'&&req.method==='POST'){json(res,200,redeemContext(db,config,session,(await readJson(req)).launch));return;}
       if(path==='/api/privacy'&&req.method==='POST'){
