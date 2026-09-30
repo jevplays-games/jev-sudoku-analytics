@@ -161,6 +161,7 @@ The app is a plain Node server and runs unchanged on GoDaddy Node hosting (Node 
 - Zip layout: repository root contents (`package.json`, `server/`, `shared/`, `public/`, `db/`) plus a production `.env` at the zip root. `npm start` loads it through `--env-file-if-exists=.env`; real process env vars, including the platform-injected `PORT`, win over the file, so leave `PORT` out of `.env`.
 - `npm run build` is a no-op (there is no build step).
 - Required env: `NODE_ENV=production`, `HOST=0.0.0.0`, `APP_ORIGIN` (HTTPS public origin), `LAUNCH_SIGNING_KEY` (32+ chars), `DATABASE_PATH` (private relative path such as `data/sudoku.sqlite`; the directory is created on start and is never served, only `public/` is). Also `TYPESAFE_API_KEY`, `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET`, `DISCORD_PUBLIC_KEY`, `ADMIN_DISCORD_IDS` as needed. `GAME_DOMAIN` is used only by Docker Compose/Caddy. Keep `TRUST_PROXY=0` unless the proxy is loopback; origin and CSRF checks are unchanged.
+- Production mode (HSTS, Secure cookies, required `LAUNCH_SIGNING_KEY`, HTTPS-only origin, default bind `0.0.0.0`) is on when `NODE_ENV=production` or when `APP_ORIGIN` is HTTPS with a non-loopback host, because GoDaddy may override `NODE_ENV`.
 - The filesystem is ephemeral: the SQLite database, results and leaderboards are lost on redeploy or host recycle. Active attempts are voided on recovery as usual.
 - `SHUTDOWN_GRACE_MS` (for example `25000`) caps the SIGTERM drain so platform restarts cannot hang; when unset the drain waits for active games as described in section 9.
 

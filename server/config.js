@@ -2,11 +2,13 @@ import { randomBytes } from 'node:crypto';
 export function loadConfig(env=process.env) {
   const int=(key,def,min=0,max=1e9)=>{const n=env[key]===undefined?def:Number(env[key]);if(!Number.isInteger(n)||n<min||n>max)throw new Error(`Invalid ${key}`);return n;};
   const price=key=>{if(!env[key])return null;const n=Number(env[key]);if(!Number.isFinite(n)||n<0)throw new Error(`Invalid ${key}`);return n;};
-  const production=env.NODE_ENV==='production',origin=new URL(env.APP_ORIGIN||'http://localhost:3000').origin;
+  const origin=new URL(env.APP_ORIGIN||'http://localhost:3000').origin,originUrl=new URL(origin),loopback=/^(localhost|127\.|\[::1\]$|0\.0\.0\.0$)/.test(originUrl.hostname)||originUrl.hostname.endsWith('.localhost');
+  // Hosts such as GoDaddy may override NODE_ENV, so a public HTTPS origin also means production.
+  const production=env.NODE_ENV==='production'||(originUrl.protocol==='https:'&&!loopback);
   if(production&&!origin.startsWith('https://'))throw new Error('APP_ORIGIN must use HTTPS in production');
   if(production&&(!env.LAUNCH_SIGNING_KEY||env.LAUNCH_SIGNING_KEY.length<32))throw new Error('Set a random LAUNCH_SIGNING_KEY of at least 32 characters');
   const discordClientId=env.DISCORD_CLIENT_ID||'';
-  return {production,origin,activityOrigin:/^\d{5,25}$/.test(discordClientId)?`https://${discordClientId}.discordsays.com`:null,host:env.HOST||'127.0.0.1',port:int('PORT',3000,0,65535),database:env.DATABASE_PATH||'data/arcade.sqlite',
+  return {production,origin,activityOrigin:/^\d{5,25}$/.test(discordClientId)?`https://${discordClientId}.discordsays.com`:null,host:env.HOST||(production?'0.0.0.0':'127.0.0.1'),port:int('PORT',3000,0,65535),database:env.DATABASE_PATH||'data/arcade.sqlite',
     launchKey:env.LAUNCH_SIGNING_KEY||randomBytes(32).toString('hex'),discordClientId,discordClientSecret:env.DISCORD_CLIENT_SECRET||'',
     discordPublicKey:env.DISCORD_PUBLIC_KEY||'',jevKey:env.TYPESAFE_API_KEY||'',jevModel:env.JEV_MODEL||'jev-1.13.0',
     jevEndpoint:'https://api.typesafe.ai/v1/systemone',pacingMs:int('PRACTICE_PACING_MS',8000,250,60000),
