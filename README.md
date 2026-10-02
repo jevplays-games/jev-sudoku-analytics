@@ -1,3 +1,5 @@
+<p align="center"><img src="assets/banner.jpg" alt="Pixel-art robot Jev solving a nine-by-nine Sudoku grid filled with colored dots and blocks in a neon arcade" width="100%"></p>
+
 # JEV Arcade — Sudoku Duel
 
 **You and JEV solve the same Sudoku on separate boards.** A single-page, framework-free game with a server-owned race clock, hash-chained authoritative match records, Discord community leaderboards, and a detailed analytics workbench. It runs as one **Cloudflare Worker with D1** (free plan, no containers) at **https://sudoku.jevplay.games**.
