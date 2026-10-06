@@ -39,10 +39,10 @@ function updateSelection(){const board=current?.human?.values||Array(81).fill(0)
 function buildBoards(){for(const [id,human]of [['human-board',true],['jev-board',false]]){
   const container=$(id);container.replaceChildren();for(let r=0;r<9;r++){const row=el('div','board-row');row.setAttribute('role','row');row.setAttribute('aria-rowindex',String(r+1));for(let c=0;c<9;c++){
     const i=r*9+c,cell=el(human?'button':'div','cell');cell.dataset.cell=String(i);if(human){cell.type='button';cell.tabIndex=i===0?0:-1;cell.addEventListener('click',()=>focusCell(i,{focus:false}));cell.addEventListener('focus',()=>{if(selected!==i)focusCell(i,{focus:false});});}
-    cell.setAttribute('role','gridcell');cell.setAttribute('aria-colindex',String(c+1));if(c===2||c===5)cell.classList.add('box-right');if(r===2||r===5)cell.classList.add('box-bottom');if(c===8)cell.classList.add('end-column');if(r===8)cell.classList.add('end-row');row.append(cell);
+    cell.setAttribute('role','gridcell');cell.setAttribute('aria-colindex',String(c+1));if(c===2||c===5)cell.classList.add('box-right');if(r===2||r===5)cell.classList.add('box-bottom');if(c===3||c===6)cell.classList.add('box-left');if(r===3||r===6)cell.classList.add('box-top');if(c===8)cell.classList.add('end-column');if(r===8)cell.classList.add('end-row');row.append(cell);
   }container.append(row);}}}
 function paintBoard(id,values,givens,human){for(const cell of $(id).querySelectorAll('.cell')){
-  const i=Number(cell.dataset.cell),v=values?.[i]||0,given=!!givens?.[i];cell.classList.toggle('given',given);cell.classList.toggle('concealed',v===-1);cell.replaceChildren();
+  const i=Number(cell.dataset.cell),v=values?.[i]||0,given=!!givens?.[i];cell.classList.toggle('given',given);const shown=cell.dataset.shown;cell.dataset.shown=String(v);if(!given&&v&&shown!==undefined&&shown!==String(v)){cell.classList.remove('placed');void cell.offsetWidth;cell.classList.add('placed');}else if(!v||shown===undefined)cell.classList.remove('placed');cell.classList.toggle('concealed',v===-1);cell.replaceChildren();
   if(v)cell.textContent=v===-1?'●':String(v);
   else if(human&&notes[i]){const grid=el('span','notes-grid');for(let d=1;d<=9;d++)grid.append(el('span',null,notes[i]&bit(d)?d:''));cell.append(grid);}
   const noteList=human&&!v?Array.from({length:9},(_,d)=>d+1).filter(d=>notes[i]&bit(d)).join(', '):'';
@@ -70,9 +70,11 @@ function render(){
   $('reveal').hidden=!(p?.eligibility==='ranked'&&p.phase!=='finished'&&p.phase!=='ready');
   $('replay-button').disabled=!p||p.phase!=='finished'||replayMode;
   $('result-banner').hidden=true;
+  $('result-banner').className='result-banner';
   if(p?.phase==='finished'){
     $('result-banner').hidden=false;
     const label=p.eligibility==='void'?'Attempt voided':p.outcome==='human'?'You won the duel':p.outcome==='draw'?'The duel ended in a draw':`${opponent} won the duel`;
+    $('result-banner').className=`result-banner jv-plaque ${p.eligibility==='void'?'is-draw':p.outcome==='human'?'is-win':p.outcome==='draw'?'is-draw':'is-loss'}`;
     $('result-banner').textContent=`${label}. ${p.human?.finishMs!==null?`Your time: ${time(p.human.finishMs)}. `:''}${p.eligibility==='ranked'?'Server-verified ranked result.':`Unranked ${p.eligibility==='void'?'void':'practice'} result.`}`;
   }else if(p?.jev?.finishMs!==null&&p?.jev?.finishMs!==undefined&&p?.human?.finishMs===null){$('result-banner').hidden=false;$('result-banner').textContent=`${opponent} finished first. Complete your board to record your solve time.`;}
   if(p?.opponent==='Heuristic fallback')notice('JEV is unavailable. This game is continuing against the heuristic and will not count toward ranked results.');
@@ -110,9 +112,10 @@ async function startGame(){if(busy)return;if(current&&['running','settling'].inc
   }catch(e){if(e.message.startsWith('active_match_exists:')){await resume(e.message.split(':')[1]);notice('Your existing active attempt has been restored.');}else notice(friendly(e),true);}
   finally{busy=false;$('new-game').disabled=false;$('new-game').replaceChildren(document.createTextNode('Start new duel '),el('span',null,'↗'));render();}
 }
+function flashConflict(i){const cell=$('human-board').querySelector(`[data-cell="${i}"]`);if(!cell)return;cell.classList.remove('conflict');void cell.offsetWidth;cell.classList.add('conflict');setTimeout(()=>cell.classList.remove('conflict'),1600);}
 async function perform(action,method='keyboard'){
   if(!current||busy||replayMode||!['running','settling'].includes(current.phase)||current.human?.finishMs!==null)return;
-  try{validateHuman({values:current.human.values,undo:current.human.canUndo?[{}]:[]},current.givens,action);}catch(e){if(e.message==='local_conflict')record('local_conflict',{cell:action.cell});notice(friendly(e),true);return;}
+  try{validateHuman({values:current.human.values,undo:current.human.canUndo?[{}]:[]},current.givens,action);}catch(e){if(e.message==='local_conflict'){record('local_conflict',{cell:action.cell});flashConflict(action.cell);}notice(friendly(e),true);return;}
   record('input_method',{method});busy=true;const started=performance.now();render();
   try{
     if(local)localApply({type:'human',action});else{
@@ -133,14 +136,14 @@ function toggleNotes(){noteMode=!noteMode;$('notes').setAttribute('aria-pressed'
 function showView(view){currentView=view;for(const panel of document.querySelectorAll('.view'))panel.hidden=panel.id!==`view-${view}`;for(const button of document.querySelectorAll('[data-view]'))button.classList.toggle('active',button.dataset.view===view);
   if(view==='analytics'){record('analysis_opened');loadAnalytics();}if(view==='leaderboards')loadLeaderboard();if(view==='profile')loadProfile();}
 // On-screen views omit the per-decision candidate evidence (about a megabyte for a long game); the JSON download asks for all of it.
-async function loadAnalytics(full=false){try{if(full&&!local&&(reportMatchId||current?.id)){try{report=await api(`/api/matches/${reportMatchId||current.id}/analytics`);renderMatchAnalytics($('analytics-content'),report);return;}catch(e){if(e.message!=='evidence_too_large')throw e;full=false;notice('This game is too long for the full candidate evidence in the summary. It is included in the replay download.');}}if(local){report=analyzeMatch(localInitial,localEvents,[],{elapsedMs:elapsed()});}else if(reportMatchId||current?.id)report=await api(`/api/matches/${reportMatchId||current.id}/analytics${full?'':'?evidence=omit'}`);else report=null;renderMatchAnalytics($('analytics-content'),report);}catch(e){$('analytics-content').replaceChildren(el('div','empty-state',friendly(e)));}}
+async function loadAnalytics(full=false){try{if(full&&!local&&(reportMatchId||current?.id)){try{report=await api(`/api/matches/${reportMatchId||current.id}/analytics`);renderMatchAnalytics($('analytics-content'),report);return;}catch(e){if(e.message!=='evidence_too_large')throw e;full=false;notice('This game is too long for the full candidate evidence in the summary. It is included in the replay download.');}}if(local){report=analyzeMatch(localInitial,localEvents,[],{elapsedMs:elapsed()});}else if(reportMatchId||current?.id)report=await api(`/api/matches/${reportMatchId||current.id}/analytics${full?'':'?evidence=omit'}`);else report=null;renderMatchAnalytics($('analytics-content'),report);}catch(e){$('analytics-content').replaceChildren(el('div','empty-state jv-empty',friendly(e)));}}
 function download(name,content,type='application/json'){const blob=new Blob([content],{type}),url=URL.createObjectURL(blob),a=el('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);}
 async function exportAll(){let offset=0,first=null;const matches=[];for(;;){const page=await api(`/api/me/export?offset=${offset}`);first||=page;matches.push(...page.matches);if(page.nextOffset===null)break;offset=page.nextOffset;}return {exportVersion:first.exportVersion,generatedAt:first.generatedAt,matches};}
 async function loadLeaderboard(next=false){try{const p=new URLSearchParams({scope:$('leaderboard-scope').value,date:$('leaderboard-date').value,difficulty:$('leaderboard-difficulty').value});if(next&&leaderboardCursor)p.set('cursor',leaderboardCursor);
   const data=await api(`/api/leaderboard?${p}`);leaderboardCursor=data.nextCursor;$('leaderboard-next').hidden=!leaderboardCursor;
-  $('leaderboard-content').replaceChildren(data.entries.length?table(['Rank','Player','Human time','Race winner'],data.entries.map(r=>[r.rank,r.display_name,time(r.seconds*1000),r.winner==='human'?'Human':r.winner==='jev'?'JEV':'Draw'])):el('div','empty-state',data.published?'No eligible completions yet.':'No challenge has been published for this date and difficulty.'));
-  }catch(e){$('leaderboard-content').replaceChildren(el('div','empty-state',friendly(e)));$('leaderboard-next').hidden=true;}}
-async function loadProfile(){try{const data=await api('/api/analytics/me');renderProfile($('profile-content'),data,id=>{reportMatchId=id;showView('analytics');});}catch(e){$('profile-content').replaceChildren(el('div','empty-state',friendly(e)));}}
+  $('leaderboard-content').replaceChildren(data.entries.length?table(['Rank','Player','Human time','Race winner'],data.entries.map(r=>[r.rank,r.display_name,time(r.seconds*1000),r.winner==='human'?'Human':r.winner==='jev'?'JEV':'Draw'])):el('div','empty-state jv-empty',data.published?'No eligible completions yet.':'No challenge has been published for this date and difficulty.'));
+  }catch(e){$('leaderboard-content').replaceChildren(el('div','empty-state jv-empty',friendly(e)));$('leaderboard-next').hidden=true;}}
+async function loadProfile(){try{const data=await api('/api/analytics/me');renderProfile($('profile-content'),data,id=>{reportMatchId=id;showView('analytics');});}catch(e){$('profile-content').replaceChildren(el('div','empty-state jv-empty',friendly(e)));}}
 function localApply(event){const e={...event,ms:Math.max(local.elapsedMs,Math.floor(performance.now()-localStarted)),sequence:local.sequence+1};local=advanceState(local,e);localEvents.push(e);current={...publicState(local),id:'offline',opponent:'Local heuristic',verified:false};stateReceived=performance.now();render();}
 function beginOffline(){const copy=current?.givens?{givens:current.givens,human:current.human.values,difficulty:current.config.difficulty}:storage.get('jev-practice-copy');
   if(!copy?.givens){notice('There is no loaded puzzle to continue offline.');return;}

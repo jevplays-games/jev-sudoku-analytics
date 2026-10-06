@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" aria-hidden="true">
+  <defs>
+    <linearGradient id="t" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#a8cdfa"/>
+      <stop offset="0.5" stop-color="#4a82d6"/>
+      <stop offset="1" stop-color="#2a5cae"/>
+    </linearGradient>
+  </defs>
+  <g fill="#0a1a38" fill-opacity="0.6">
+    <rect x="12" y="13" width="13" height="13" rx="3.5"/><rect x="27" y="13" width="13" height="13" rx="3.5"/><rect x="42" y="13" width="13" height="13" rx="3.5"/>
+    <rect x="12" y="28" width="13" height="13" rx="3.5"/><rect x="27" y="28" width="13" height="13" rx="3.5"/><rect x="42" y="28" width="13" height="13" rx="3.5"/>
+    <rect x="12" y="43" width="13" height="13" rx="3.5"/><rect x="27" y="43" width="13" height="13" rx="3.5"/><rect x="42" y="43" width="13" height="13" rx="3.5"/>
+  </g>
+  <g fill="url(#t)" opacity="0.75">
+    <rect x="10" y="10" width="13" height="13" rx="3.5"/><rect x="25" y="10" width="13" height="13" rx="3.5"/><rect x="40" y="10" width="13" height="13" rx="3.5"/>
+    <rect x="10" y="25" width="13" height="13" rx="3.5"/><rect x="25" y="25" width="13" height="13" rx="3.5"/><rect x="40" y="25" width="13" height="13" rx="3.5"/>
+    <rect x="10" y="40" width="13" height="13" rx="3.5"/><rect x="25" y="40" width="13" height="13" rx="3.5"/><rect x="40" y="40" width="13" height="13" rx="3.5"/>
+  </g>
+</svg>

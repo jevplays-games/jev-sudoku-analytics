@@ -21,7 +21,7 @@ function progressChart(report){const card=el('section','chart-panel');card.appen
 }
 function heatmap(report){const card=el('section','chart-panel');card.append(el('h3',null,'Your edit heatmap'));const grid=el('div','heatmap');grid.setAttribute('aria-label','Number of accepted edits per cell');const max=Math.max(1,...report.human.cellEdits);
   report.human.cellEdits.forEach((n,i)=>{const level=n?Math.max(1,Math.ceil(n/max*5)):0,cell=el('div',`heatcell heat-${level}`,n||'·');cell.title=`Row ${Math.floor(i/9)+1}, column ${i%9+1}: ${n} accepted edits`;cell.setAttribute('aria-label',cell.title);grid.append(cell);});card.append(grid,el('p','muted','Includes placement, replacement, erase, and undo.'));return card;}
-export function renderMatchAnalytics(container,r){container.replaceChildren();if(!r){container.append(el('div','empty-state','Start a duel to inspect your data.'));return;}
+export function renderMatchAnalytics(container,r){container.replaceChildren();if(!r){container.append(el('div','empty-state jv-empty','Start a duel to inspect your data.'));return;}
   container.append(kpis([['Your solve time',time(r.game.humanFinishMs),r.game.humanCompleted?'Completed and recorded':'Still solving'],['Board completion',pct(r.game.completionFraction),`${r.human.filledEditableCells} / ${r.game.initialEmpty} editable cells`],['JEV requests',fmt(r.jev.requestCount,0),`${r.jev.modelDecisions} applied model decisions`],['Median inference',ms(r.jev.requestLatencyMs.median),`p95 ${ms(r.jev.requestLatencyMs.p95)} · n=${r.jev.requestCount}`]]));
   const charts=el('div','chart-grid');charts.append(progressChart(r),heatmap(r));container.append(charts);
   const grid=el('div','metrics-grid');grid.append(metrics('Your solving behavior',[
