@@ -9,7 +9,7 @@ import { openDatabase } from './database.js';
 import { handle } from '../server/worker.js';
 import { loadConfig } from '../server/config.js';
 const root = fileURLToPath(new URL('../', import.meta.url)), publicRoot = resolve(root, 'public');
-const types = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.json': 'application/json; charset=utf-8', '.svg': 'image/svg+xml', '.woff2': 'font/woff2', '.txt': 'text/plain; charset=utf-8' };
+const types = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.json': 'application/json; charset=utf-8', '.png': 'image/png', '.svg': 'image/svg+xml', '.woff2': 'font/woff2', '.txt': 'text/plain; charset=utf-8' };
 export function assetsBinding(dir = publicRoot) {
   return { async fetch(request) {
     if (!['GET', 'HEAD'].includes(request.method)) return new Response('Method not allowed', { status: 405 });

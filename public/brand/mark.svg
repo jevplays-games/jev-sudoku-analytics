@@ -1,1 +1,33 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="28" height="28" aria-hidden="true"><rect width="64" height="64" rx="15" fill="currentColor" opacity=".1"/><path d="M34 14v20.5c0 5.2-4.2 9.5-9.5 9.5S15 39.7 15 34.5" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="32" height="32" aria-hidden="true">
+  <defs>
+    <radialGradient id="ground" cx="0.28" cy="0.2" r="1">
+      <stop offset="0" stop-color="#2f74d0"/>
+      <stop offset="0.45" stop-color="#12315f"/>
+      <stop offset="1" stop-color="#0c0d17"/>
+    </radialGradient>
+    <linearGradient id="t" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#a8cdfa"/>
+      <stop offset="0.5" stop-color="#4a82d6"/>
+      <stop offset="1" stop-color="#2a5cae"/>
+    </linearGradient>
+    <linearGradient id="c" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#dcecff"/>
+      <stop offset="0.45" stop-color="#4f9bff"/>
+      <stop offset="1" stop-color="#2260c4"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="15" fill="url(#ground)"/>
+  <g fill="#0a1a38" fill-opacity="0.6">
+    <rect x="12" y="13" width="13" height="13" rx="3.5"/><rect x="27" y="13" width="13" height="13" rx="3.5"/><rect x="42" y="13" width="13" height="13" rx="3.5"/>
+    <rect x="12" y="28" width="13" height="13" rx="3.5"/><rect x="42" y="28" width="13" height="13" rx="3.5"/>
+    <rect x="12" y="43" width="13" height="13" rx="3.5"/><rect x="27" y="43" width="13" height="13" rx="3.5"/><rect x="42" y="43" width="13" height="13" rx="3.5"/>
+  </g>
+  <g fill="url(#t)">
+    <rect x="10" y="10" width="13" height="13" rx="3.5"/><rect x="25" y="10" width="13" height="13" rx="3.5"/><rect x="40" y="10" width="13" height="13" rx="3.5"/>
+    <rect x="10" y="25" width="13" height="13" rx="3.5"/><rect x="40" y="25" width="13" height="13" rx="3.5"/>
+    <rect x="10" y="40" width="13" height="13" rx="3.5"/><rect x="25" y="40" width="13" height="13" rx="3.5"/><rect x="40" y="40" width="13" height="13" rx="3.5"/>
+  </g>
+  <rect x="21.5" y="21.5" width="21" height="21" rx="5" fill="#04050a" fill-opacity="0.55" transform="translate(1.5 2.5)"/>
+  <rect x="21.5" y="21.5" width="21" height="21" rx="5" fill="url(#c)"/>
+  <path d="M35.8 30.2a3.8 3.8 0 1 0-7.6 0a3.8 3.8 0 1 0 7.6 0M35.8 30.2C35.8 35 34.5 36.8 30.6 37.6" fill="none" stroke="#ffffff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
