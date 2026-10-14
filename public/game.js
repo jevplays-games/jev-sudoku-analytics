@@ -57,7 +57,7 @@ function render(){
   for(const [prefix,count]of [['human',h],['jev',j]]){$(`${prefix}-progress`).textContent=`${Math.max(0,count)} / ${empty} cells`;$(`${prefix}-percent`).textContent=empty?`${Math.round(count/empty*100)}%`:'0%';$(`${prefix}-progressbar`).value=empty?count/empty*100:0;}
   $('timer').textContent=time(elapsed());$('phase-label').textContent=replayMode?'REPLAY':p?.phase==='running'?'RACE IN PROGRESS':p?.phase==='settling'?'CHECKING FINISH':p?.phase==='finished'?'DUEL COMPLETE':'READY TO PLAY';
   $('eligibility-label').textContent=p?.eligibility==='ranked'?'Daily ranked':p?.eligibility==='void'?'Void':'Practice';
-  $('puzzle-caption').textContent=p?.givens?`${clueCount} clues · ${p.config.difficulty.toUpperCase()} · ${p.config.puzzleBand||'standard'}`:'Classic 9 × 9 · one correct solution';
+  $('puzzle-caption').textContent=p?.givens?`${clueCount} clues · ${p.config.difficulty[0].toUpperCase()+p.config.difficulty.slice(1)} · ${p.config.puzzleBand||'standard'}`:'Classic 9 × 9 · one correct solution';
   const opponent=p?.opponent||(me?.capabilities?.jev?'Jev':'Local heuristic');$('opponent-name').textContent=opponent;
   $('opponent-badge').textContent=opponent==='Jev'?'STRUCTURED AI':'HEURISTIC';
   $('opponent-subtitle').textContent=p?.jev?.hidden?'Your opponent’s digits stay concealed.':opponent==='Jev'?'Structured decisions. Validated moves.':'Practice opponent · not a live Jev model';

@@ -1,60 +1,76 @@
-/* JEV Arcade shared brand system. Loaded before game.css in every arcade repo.
-   Owns: font, color tokens, type scale, spacing, the .jv-* app shell and header,
-   and the art layer (lighting, lacquer surfaces, motion) every game draws with.
-   Games own their board and set the accent trio; they must not redefine the tokens above it.
-   This file is byte-identical in all ten repos. Change it once, copy it, verify by hash. */
+/* jevplay.games shared brand system. Loaded before game.css in every jevplay.games repo.
+   Owns: fonts, color tokens, type scale, spacing, the .jv-* app shell and header, the pixel-window
+   kit (.jv-window, .jv-titlebar, .jv-tag, .jv-chip, .jv-halftone, .jv-crop) and the board layer
+   (tray, wells, plaque, motion) every game draws with.
+   Style: pink/ink pixel windows. Pink ground, grey window bodies with a 1px ink border, a 2px paper
+   inner bevel and a hard 3px ink drop shadow; ink title bars. No gradients, no glow, no blur.
+   Games own their board and may set the accent trio for pieces that need colour to tell players
+   apart; they must not redefine the tokens above it, and the accent stays out of chrome.
+   Self-contained: needs only /brand/inter-var.woff2 and /brand/vt323.woff2 (both SIL OFL 1.1,
+   licences in /brand/OFL.txt and /brand/OFL-VT323.txt). No data: URIs, no images, nothing remote.
+   This file is byte-identical in all ten repos. Change it once in the hub, copy it, verify by hash. */
 
 @font-face{font-family:Inter;src:url(/brand/inter-var.woff2)format("woff2");font-weight:100 900;font-display:swap;font-style:normal}
+/* VT323 draws small for its em box; size-adjust brings its cap height near Inter's at the same
+   font-size, so a game can swap families on an element without retuning its size. */
+@font-face{font-family:VT323;src:url(/brand/vt323.woff2)format("woff2");font-weight:400;font-display:swap;font-style:normal;size-adjust:125%}
 
 :root{
-  color-scheme:dark;
+  color-scheme:light;
+
+  /* Palette. These seven hexes are the whole brand. Magenta is a highlight, never a fill or a
+     text colour on pink; blue and amber are for charts and player identity. Measured contrast:
+     ink on pink 6.9:1, ink on grey 12.4:1, ink on paper 16.5:1, ink on magenta 4.9:1,
+     pink on ink 6.9:1. Paper on magenta is 3.4:1: large text only, so use ink on magenta. */
+  --pink:#F386A1; --ink:#1E1E1E; --magenta:#E551BA; --grey:#DEDEDE; --paper:#FEFEFE;
+  --blue:#1F78A8; --amber:#E8A33D;
 
   /* Shell. Identical in all nine games. */
-  --bg:#0e1017; --surface:#171a24; --raised:#1e2230; --sunken:#0a0c12;
-  --line:#2c3243; --line-soft:#232838;
-  --text:#eef0f7; --muted:#a3aabd; --subtle:#78809a;
+  --bg:var(--pink); --surface:var(--grey); --raised:var(--paper); --sunken:var(--paper);
+  --line:var(--ink); --line-soft:rgba(30,30,30,.28);
+  /* Text is ink. --muted and --subtle hold 4.5:1 on pink, grey and paper alike. */
+  --text:var(--ink); --muted:#333333; --subtle:#3d3d3d;
 
-  /* Per-game identity. A game overrides the accent TRIO in game.css and nothing else.
-     All three move together: --accent-deep left at the default while --accent is
-     retuned is what left gold and teal games with a violet pressed/hover state. */
-  --accent:#a99bff; --accent-deep:#6f5fd6; --accent-ink:#0e1017;
-  /* The accent used AS TEXT on the dark shell. It follows --accent; a game whose
-     accent is too deep to read at 4.5:1 (red, purple) lightens this one value
-     instead of washing out its identity colour everywhere else. */
+  /* Per-game identity. Default is ink, so chrome stays pink/ink. A game whose pieces need colour
+     to tell players apart overrides the accent TRIO in game.css and nothing else. All three move
+     together; --accent-ink is the text colour ON the accent. */
+  --accent:var(--ink); --accent-deep:var(--ink); --accent-ink:var(--paper);
+  /* The accent used AS TEXT on grey or paper. A light accent sets this one value to ink. */
   --accent-text:var(--accent);
-  /* Accent tints. The plain values are the fallback for webviews without
-     color-mix (hue-neutral, so they are right for every game); the @supports
-     block below replaces them with real tints of the game's own accent. */
-  --accent-soft:rgba(255,255,255,.07); --accent-line:rgba(255,255,255,.2); --accent-glow:rgba(255,255,255,.16);
+  /* Accent tints. Plain values are the fallback for webviews without color-mix; the @supports
+     block below replaces them with tints of the game's own accent. --accent-glow is kept for
+     old game.css and is transparent: the style has no glow. */
+  --accent-soft:rgba(30,30,30,.08); --accent-line:var(--ink); --accent-glow:transparent;
   --accent-hi:var(--accent);
-  --jev-soft:rgba(111,220,200,.1);
+  --jev-soft:transparent;
 
-  /* Fixed semantics across all nine, replacing the seven old naming schemes. */
-  --human:#b5a1ff; --jev:#6fdcc8;
-  --ok:#8fe0b8; --warn:#edc389; --danger:#f79aa4;
+  /* Fixed semantics across all nine. Fills, strips and chart series only, never text:
+     text that carries one of these meanings is ink with a non-colour cue (word, icon, shape). */
+  --human:var(--blue); --jev:var(--amber);
+  --ok:var(--blue); --warn:var(--amber); --danger:var(--magenta);
 
-  /* Type */
+  /* Type. Inter 700 for titles, Inter for running text, VT323 for UI and pixel text. */
   --font:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
-  --mono:ui-monospace,SFMono-Regular,Consolas,monospace;
-  /* Micro label step. The scale used to stop at 12px, so all nine invented
-     their own bottom end -- 8, 9, 10 and 11px across ~150 declarations -- for
-     eyebrows, table meta, legends and chip captions. One step now. */
+  --font-display:var(--font);
+  --font-pixel:VT323,"JetBrains Mono",Consolas,ui-monospace,monospace;
+  /* Numerals (scores, clocks, KPIs) are pixel numerals. VT323 is monospaced, so tabular. */
+  --mono:var(--font-pixel);
   --fs-2xs:.625rem;
   --fs-xs:.75rem; --fs-sm:.875rem; --fs-md:1rem; --fs-lg:1.125rem;
   --fs-xl:1.375rem; --fs-2xl:clamp(1.5rem,1.1rem + 2vw,2.25rem); --fs-3xl:clamp(1.875rem,1.2rem + 3.2vw,3rem);
 
-  /* Display numerals: scores, KPIs, stat figures. Deliberately FIXED, unlike
-     the two heading clamps above -- a number sitting in a fixed-width card or a
-     grid cell must not grow with the viewport and burst its container, which is
-     why every game had hardcoded these instead of reaching for --fs-2xl. */
+  /* Display numerals: deliberately FIXED, unlike the heading clamps. A number in a fixed-width
+     card or grid cell must not grow with the viewport and burst its container. */
   --fs-num-sm:1.5rem; --fs-num:1.75rem; --fs-num-lg:2.25rem;
   --lh-tight:1.15; --lh:1.5;
   --track-caps:.08em;
+  --track-title:-.04em;
 
   /* Spacing: 4px base */
   --s1:.25rem; --s2:.5rem; --s3:.75rem; --s4:1rem; --s5:1.5rem; --s6:2rem; --s7:3rem; --s8:4rem;
 
-  --radius-sm:8px; --radius:12px; --radius-lg:16px; --radius-xl:20px; --radius-pill:999px;
+  /* Pixel windows are square. The tokens stay so old game.css keeps resolving. */
+  --radius-sm:0; --radius:0; --radius-lg:0; --radius-xl:0; --radius-pill:0;
   --tap:44px;
   --header-h:56px;
 
@@ -62,38 +78,36 @@
   --sa-t:env(safe-area-inset-top,0px); --sa-r:env(safe-area-inset-right,0px);
   --sa-b:env(safe-area-inset-bottom,0px); --sa-l:env(safe-area-inset-left,0px);
 
-  --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.28);
+  /* Depth is a hard ink shadow down-right and a paper bevel on the top-left inner edge.
+     Nothing blurs. --drop-sm is for pieces and small controls. */
+  --drop:3px 3px 0 var(--ink); --drop-sm:2px 2px 0 var(--ink);
+  --bevel:inset 2px 2px 0 var(--paper);
+  --shadow:var(--drop);
 
-  /* Art direction, as tokens. One key light from the top-left: a raised surface
-     catches it on its top edge (--light), sits on a darker lip (--lip) and
-     drops its shadow down-right. A well is the inverse. See art/README.md in
-     the hub for the full guide; pieces and boards are drawn to the same rule. */
-  --light:rgba(255,255,255,.09); --light-strong:rgba(255,255,255,.38);
-  --lip:rgba(0,0,0,.42);
-  --surface-hi:#1b1f2b;
-  --raise:inset 0 1px 0 var(--light),0 1px 2px rgba(0,0,0,.45),0 10px 28px rgba(0,0,0,.3);
-  --raise-piece:inset 0 1px 0 var(--light-strong),0 3px 0 var(--lip),0 8px 14px rgba(0,0,0,.4);
-  --well:inset 0 2px 5px rgba(0,0,0,.6),inset 0 0 0 1px rgba(0,0,0,.3),0 1px 0 rgba(255,255,255,.05);
+  /* Old lighting token names, re-pointed at the flat style so existing game.css still works. */
+  --light:var(--paper); --light-strong:var(--paper);
+  --lip:var(--ink);
+  --surface-hi:var(--grey);
+  --raise:var(--bevel),var(--drop);
+  --raise-piece:var(--drop-sm);
+  --well:inset 2px 2px 0 rgba(30,30,30,.32);
   --ease-out:cubic-bezier(.2,.8,.2,1); --ease-pop:cubic-bezier(.2,.9,.3,1.3);
 
-  /* How wide the content shell may grow. It used to be a flat 1280px, which
-     left a third of a 1920 display and half of a 2560 one as empty gutter in
-     all nine games while the page itself ran two to three screens tall. */
+  /* Halftone: ink dots on a 6px pitch at 40%, for grounds and decoration only (never behind
+     body text or a board). */
+  --halftone:radial-gradient(rgba(30,30,30,.4) 1px,transparent 1.6px) 0 0/6px 6px;
+
+  /* How wide the content shell may grow; steps up on large displays (below). */
   --shell:1280px;
 
-  /* Focus. An outline, not a box-shadow: a shadow ring is clipped by the
-     overflow:hidden on every board and analytics surface, which is why all nine
-     games had replaced it with an outline of their own -- in three colours,
-     three widths and three offsets. Tokens, so a dense board tightens the ring
-     by retuning --focus-offset on the cell (.cell{--focus-offset:0}) rather than
-     restating colour and width it would then own forever. */
-  --focus-color:var(--accent); --focus-w:3px; --focus-offset:3px;
+  /* Focus: an outline, not a shadow (boards clip shadows with overflow:hidden). Ink holds
+     6.9:1 against pink and 12:1 against grey. A dense board tightens the ring by retuning
+     --focus-offset on the cell (.cell{--focus-offset:0}). */
+  --focus-color:var(--ink); --focus-w:3px; --focus-offset:3px;
 }
 @supports (color:color-mix(in srgb,red 50%,blue)){
   :root{
-    --accent-soft:color-mix(in srgb,var(--accent) 13%,transparent);
-    --accent-line:color-mix(in srgb,var(--accent) 42%,transparent);
-    --accent-glow:color-mix(in srgb,var(--accent) 34%,transparent);
+    --accent-soft:color-mix(in srgb,var(--accent) 12%,transparent);
     --accent-hi:color-mix(in srgb,var(--accent) 78%,#fff);
   }
 }
@@ -108,26 +122,61 @@ body{
   min-height:100vh; min-height:100dvh;
   overflow-x:hidden;
 }
-h1,h2,h3,h4{margin:0;line-height:var(--lh-tight);font-weight:650;letter-spacing:-.015em}
-h1{font-size:var(--fs-2xl)} h2{font-size:var(--fs-xl)} h3{font-size:var(--fs-lg)} h4{font-size:var(--fs-md)}
+h1,h2,h3,h4{margin:0;font-family:var(--font-display);line-height:var(--lh-tight);font-weight:700;letter-spacing:-.02em}
+h1{font-size:var(--fs-2xl);letter-spacing:var(--track-title)} h2{font-size:var(--fs-xl)} h3{font-size:var(--fs-lg)} h4{font-size:var(--fs-md)}
 p{margin:0}
 :where(button,input,select,textarea){font:inherit;color:inherit}
-:where(a){color:var(--accent-text);text-decoration:none}
+:where(a){color:var(--ink);text-decoration:underline;text-underline-offset:3px}
 :focus-visible{outline:var(--focus-w) solid var(--focus-color);outline-offset:var(--focus-offset);box-shadow:none}
-.jv-eyebrow{font-size:var(--fs-xs);letter-spacing:var(--track-caps);text-transform:uppercase;color:var(--muted);font-weight:600}
+::selection{background:var(--ink);color:var(--pink)}
+.jv-eyebrow{font-family:var(--font-pixel);font-size:var(--fs-sm);letter-spacing:var(--track-caps);text-transform:uppercase;color:var(--muted);font-weight:400}
 .jv-num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+
+/* ---------- Pixel-window kit ---------- */
+/* A window: grey body, 1px ink border, paper bevel, hard ink shadow. Put a .jv-titlebar first. */
+.jv-window{background:var(--grey);color:var(--ink);border:1px solid var(--ink);box-shadow:var(--raise)}
+/* Ink title bar: UPPERCASE name left, "_ x" right (decorative; hidden from assistive tech). */
+.jv-titlebar{
+  display:flex;align-items:center;justify-content:space-between;gap:var(--s2);
+  min-height:28px;padding:2px var(--s2) 2px var(--s3);margin:0;
+  background:var(--ink);color:var(--paper);
+  font-family:var(--font-pixel);font-size:var(--fs-md);font-weight:400;line-height:1.1;
+  letter-spacing:var(--track-caps);text-transform:uppercase;
+}
+.jv-titlebar::after{content:"_ x";content:"_ x"/"";flex:none;letter-spacing:.2em;color:var(--pink)}
+/* Dotted tag: JEVPLAY.GAMES or JEVPLAY.GAMES/NOUL-WHO, pink on an ink box. */
+.jv-tag{
+  display:inline-block;padding:2px var(--s2);
+  background:var(--ink);color:var(--pink);
+  font-family:var(--font-pixel);font-size:var(--fs-md);font-weight:400;line-height:1.2;
+  letter-spacing:var(--track-caps);text-transform:uppercase;
+}
+/* Chip: grey, 1px ink border, pixel text. Lists of tags, filters, "+choice" style labels. */
+.jv-chip{
+  display:inline-flex;align-items:center;gap:var(--s1);padding:0 var(--s2);
+  background:var(--grey);color:var(--ink);border:1px solid var(--ink);
+  font-family:var(--font-pixel);font-size:var(--fs-md);line-height:1.4;letter-spacing:.02em;
+}
+/* Halftone ground. Decoration only. */
+.jv-halftone{background:var(--halftone),var(--bg)}
+/* L-shaped crop marks at the four inner corners of a positioned box. */
+.jv-crop{position:relative}
+.jv-crop::before{
+  content:"";position:absolute;inset:var(--crop-inset,10px);pointer-events:none;
+  --c:linear-gradient(var(--ink),var(--ink));
+  background:
+    var(--c) top left/18px 1px no-repeat,var(--c) top left/1px 18px no-repeat,
+    var(--c) top right/18px 1px no-repeat,var(--c) top right/1px 18px no-repeat,
+    var(--c) bottom left/18px 1px no-repeat,var(--c) bottom left/1px 18px no-repeat,
+    var(--c) bottom right/18px 1px no-repeat,var(--c) bottom right/1px 18px no-repeat;
+}
 
 /* ---------- App shell ---------- */
 .jv-app{
   display:flex;flex-direction:column;
   min-height:100vh;min-height:100dvh;
   padding-left:var(--sa-l);padding-right:var(--sa-r);
-  /* The ground every game stands on: the key light in the game's accent from
-     the top-left, JEV's teal answering from the bottom-right. Gradients only,
-     so there is nothing to load and nothing to shift. */
-  background:
-    radial-gradient(110% 70% at 8% -8%,var(--accent-soft),transparent 62%),
-    radial-gradient(80% 60% at 104% 108%,var(--jev-soft),transparent 58%);
+  background:var(--bg);
 }
 .jv-main{
   flex:1;width:100%;max-width:var(--shell);margin:0 auto;
@@ -136,203 +185,164 @@ p{margin:0}
 }
 @media(max-width:600px){.jv-main{padding:var(--s3) var(--s3) calc(var(--s5) + var(--sa-b));gap:var(--s4)}}
 
-/* Board-first: the hero drops below the board. Triggered by narrow width OR
-   short height -- a 740x420 landscape phone and a laptop at 1440x800 are both
-   wide but short, and there the hero pushed the board below the fold too.
-   Games mark their board container .jv-first and the hero .jv-hero. */
+/* Board-first: the hero drops below the board on narrow OR short screens. Games mark their
+   board container .jv-first and the hero .jv-hero. */
 @media(max-width:600px),(max-height:950px){
   .jv-main>.jv-first{order:-1}
 }
-/* Hero headline: one recipe. All nine had retuned it on their own -- six sizes,
-   five weights, five letter-spacings (two of them in px, so they did not track
-   the clamp) and margins in five different units. A game styles nothing here.
-   Section headings on secondary views stay on the plain h1 above, a step down. */
-.jv-hero h1{font-size:var(--fs-3xl);font-weight:700;letter-spacing:-.03em;line-height:1.08;margin:0 0 var(--s3)}
+/* Hero headline: one recipe for all nine. Secondary views use the plain h1, a step down. */
+.jv-hero h1{font-size:var(--fs-3xl);font-weight:700;letter-spacing:var(--track-title);line-height:1.04;margin:0 0 var(--s3)}
 .jv-hero h1 span{color:var(--muted);font-weight:400}
 .jv-hero p{color:var(--muted);font-size:var(--fs-sm);max-width:62ch}
-.jv-tagline{margin-top:var(--s2);font-size:var(--fs-xs);letter-spacing:var(--track-caps);color:var(--subtle)}
-
-/* Short viewports get the smaller hero too, not just narrow ones -- tic-tac-toe
-   had worked this out alone for landscape phones. Same trigger family as the
-   board-first rule above. */
+.jv-tagline{margin-top:var(--s2);font-family:var(--font-pixel);font-size:var(--fs-md);letter-spacing:var(--track-caps);text-transform:uppercase;color:var(--subtle)}
 @media(max-width:600px),(max-height:560px){
   .jv-hero h1{font-size:var(--fs-xl)}
 }
 
-.jv-skip{position:absolute;left:-9999px;top:0;z-index:100;padding:var(--s3) var(--s4);background:var(--raised);border-radius:0 0 var(--radius) 0}
+.jv-skip{position:absolute;left:-9999px;top:0;z-index:100;padding:var(--s3) var(--s4);background:var(--ink);color:var(--paper)}
 .jv-skip:focus{left:0}
 
-/* ---------- Header: one row, every game ---------- */
+/* ---------- Header: one row, every game. A grey menu bar on an ink rule. ---------- */
 .jv-header{
   position:sticky;top:0;z-index:50;
   display:flex;align-items:center;gap:var(--s2);
   height:calc(var(--header-h) + var(--sa-t));
   padding:var(--sa-t) var(--s3) 0;
-  background:rgba(14,16,23,.88);
-  background:color-mix(in srgb,var(--bg) 88%,transparent);
-  -webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
-  border-bottom:1px solid var(--line-soft);
+  background:var(--grey);color:var(--ink);
+  border-bottom:1px solid var(--ink);
+  box-shadow:inset 0 -2px 0 var(--paper);
 }
-@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){.jv-header{background:var(--bg)}}
 
 .jv-icon-btn{
   flex:none;display:grid;place-items:center;
   width:var(--tap);height:var(--tap);
-  background:transparent;border:0;border-radius:var(--radius-sm);
-  color:var(--muted);cursor:pointer;
+  background:transparent;border:1px solid transparent;border-radius:0;
+  color:var(--ink);cursor:pointer;
 }
-.jv-icon-btn svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
-.jv-icon-btn[aria-expanded=true]{background:var(--raised);color:var(--text)}
+.jv-icon-btn svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:square;stroke-linejoin:miter}
+.jv-icon-btn[aria-expanded=true]{background:var(--ink);color:var(--paper)}
 
-/* flex:1 1 auto, not flex:1. With a 0 basis the brand absorbs all free space,
-   the header is never over-full, so no sibling ever shrinks and the title alone
-   eats every shortfall -- measured at 56px against 91px needed. An auto basis
-   lets shrink actually distribute. */
-.jv-brand{display:flex;align-items:center;gap:var(--s2);min-width:0;min-height:var(--tap);flex:1 1 auto;color:var(--text)}
-/* The game's own emblem mark (brand/mark.svg), not a shared J: this is where a
-   player first sees which of the nine they are in. */
-.jv-mark{flex:none;width:32px;height:32px;border-radius:9px;display:block}
-.jv-wordmark{display:none;font-size:var(--fs-xs);letter-spacing:var(--track-caps);color:var(--muted);font-weight:700;white-space:nowrap}
+/* flex:1 1 auto, not flex:1: an auto basis lets shrink distribute across the header so the
+   title is not the only thing that gives way. */
+.jv-brand{display:flex;align-items:center;gap:var(--s2);min-width:0;min-height:var(--tap);flex:1 1 auto;color:var(--ink);text-decoration:none}
+/* The game's own emblem mark (brand/mark.svg): where a player first sees which game they are in. */
+.jv-mark{flex:none;width:32px;height:32px;border-radius:0;display:block;border:1px solid var(--ink)}
+.jv-wordmark{display:none;font-family:var(--font-pixel);font-size:var(--fs-md);letter-spacing:var(--track-caps);text-transform:uppercase;color:var(--ink);font-weight:400;white-space:nowrap}
 .jv-title{
   /* A floor, so the title can ellipsise but never collapse to a single letter. */
-  min-width:3.5rem;font-size:var(--fs-md);font-weight:650;letter-spacing:-.01em;
+  min-width:3.5rem;font-size:var(--fs-md);font-weight:700;letter-spacing:-.02em;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
-.jv-sep{display:none;width:1px;height:16px;background:var(--line);flex:none}
+.jv-sep{display:none;width:1px;height:16px;background:var(--ink);flex:none}
 
 /* The one status slot. Games put score, clock, turn or count here. */
 .jv-status{
-  /* Shrinkable, so the chip gives up space before the game title does.
-     Measured: at 900px with five tabs the title was being crushed to 27px. */
+  /* Shrinkable, so the chip gives up space before the game title does. */
   flex:0 1 auto;min-width:0;max-width:40vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
   display:flex;align-items:center;gap:var(--s2);
   padding:var(--s1) var(--s3);min-height:30px;
-  font-size:var(--fs-xs);font-weight:600;letter-spacing:.02em;
-  background:var(--raised);border:1px solid var(--line);border-radius:var(--radius-pill);color:var(--muted);
+  font-family:var(--font-pixel);font-size:var(--fs-md);font-weight:400;letter-spacing:.04em;text-transform:uppercase;
+  background:var(--paper);border:1px solid var(--ink);border-radius:0;color:var(--ink);
 }
-.jv-status strong{color:var(--text);font-family:var(--mono);font-variant-numeric:tabular-nums}
-.jv-dot{width:7px;height:7px;border-radius:50%;background:var(--muted);flex:none}
+.jv-status strong{color:var(--ink);font-family:var(--mono);font-weight:400;font-variant-numeric:tabular-nums}
+.jv-dot{width:8px;height:8px;border-radius:0;background:var(--subtle);flex:none}
 .jv-dot.is-live{background:var(--ok)} .jv-dot.is-off{background:var(--danger)}
 
 /* Secondary controls: a sheet on mobile, an inline header row from 900px.
-   #jv-controls is authored inside #jv-sheet and physically MOVED into the
-   header by brand.js above 900px. It is a move, not a clone, so ids stay
-   unique and every existing [data-page]/[data-view] binding survives.
-
-   Why a DOM move rather than CSS: .jv-header has backdrop-filter, which makes
-   it the containing block for any fixed-position descendant. So the sheet
-   cannot be both a fixed bottom sheet on mobile and a child of the header on
-   desktop. Nine repos each invented a workaround for this (three position:fixed
-   variants with guessed header reserves, two that rebuild the header's blur and
-   border on a second element, one display:contents, two .jv-app grids); all of
-   them either guess an offset or create a seam that has to match by eye.
-   Moving the node makes it a static flex child, and the problem disappears. */
+   #jv-controls is authored inside #jv-sheet and physically MOVED into the header by brand.js
+   above 900px (a move, not a clone, so ids stay unique and bindings survive). The header is no
+   longer a containing block for fixed children (no backdrop-filter), but the move stays: every
+   game's brand.js depends on it. */
 #jv-controls{display:flex;flex-direction:column;gap:var(--s2);width:100%;min-width:0}
 #jv-controls .jv-sheet-item{width:100%}
-/* Nav tabs keep a real <nav> landmark. Flattening it into #jv-controls lost the
-   landmark and its label in the four tabbed games, so the wrapper stays and is
-   laid out instead of being removed. */
+/* Nav tabs keep a real <nav> landmark. */
 #jv-controls .jv-nav{display:flex;flex-direction:column;gap:var(--s2);width:100%;min-width:0}
 .jv-sheet{
   position:fixed;inset:auto 0 0 0;z-index:60;
-  transform:translateY(100%);transition:transform .22s ease,visibility .22s;
+  transform:translateY(100%);transition:transform .18s steps(4,end),visibility .18s;
   visibility:hidden;
-  background:var(--surface);border-top:1px solid var(--line);
-  border-radius:var(--radius-xl) var(--radius-xl) 0 0;
+  background:var(--grey);border-top:1px solid var(--ink);
+  box-shadow:var(--bevel),0 -3px 0 var(--ink);
   padding:var(--s4) var(--s4) calc(var(--s4) + var(--sa-b));
   display:flex;flex-direction:column;gap:var(--s2);
-  max-height:80dvh;overflow:auto;box-shadow:var(--shadow);
+  max-height:80dvh;overflow:auto;
 }
 .jv-sheet.is-open{transform:translateY(0);visibility:visible}
-.jv-scrim{position:fixed;inset:0;z-index:55;background:rgba(6,8,13,.6);opacity:0;visibility:hidden;transition:opacity .22s ease,visibility .22s}
+.jv-scrim{position:fixed;inset:0;z-index:55;background:rgba(30,30,30,.55);opacity:0;visibility:hidden;transition:opacity .18s ease,visibility .18s}
 .jv-scrim.is-open{opacity:1;visibility:visible}
 .jv-sheet-item{
   display:flex;align-items:center;gap:var(--s3);width:100%;
   min-height:var(--tap);padding:var(--s2) var(--s3);
-  background:transparent;border:0;border-radius:var(--radius);
-  color:var(--text);font-size:var(--fs-sm);text-align:left;cursor:pointer;
+  background:transparent;border:1px solid transparent;border-radius:0;
+  color:var(--ink);font-family:var(--font-pixel);font-size:var(--fs-lg);letter-spacing:.04em;text-transform:uppercase;
+  text-align:left;cursor:pointer;
 }
-.jv-sheet-item[aria-current=page],.jv-sheet-item.is-active{background:var(--raised);color:var(--accent-text)}
-.jv-sheet-label{padding:var(--s2) var(--s3) 0;font-size:var(--fs-xs);letter-spacing:var(--track-caps);text-transform:uppercase;color:var(--subtle)}
+.jv-sheet-item[aria-current=page],.jv-sheet-item.is-active{background:var(--ink);color:var(--pink)}
+.jv-sheet-label{padding:var(--s2) var(--s3) 0;font-family:var(--font-pixel);font-size:var(--fs-md);letter-spacing:var(--track-caps);text-transform:uppercase;color:var(--subtle)}
 
 /* ---------- Controls ---------- */
+/* A key: grey face, ink border, paper bevel, hard shadow. It travels 2px when pressed. */
 .jv-btn{
   display:inline-flex;align-items:center;justify-content:center;gap:var(--s2);
   min-height:var(--tap);padding:0 var(--s4);
-  border-radius:var(--radius);border:1px solid var(--line);
-  background:var(--raised);color:var(--text);
-  font-size:var(--fs-sm);font-weight:600;cursor:pointer;
-  transition:background .15s ease,border-color .15s ease,transform .1s ease;
-  box-shadow:inset 0 1px 0 var(--light);
+  border-radius:0;border:1px solid var(--ink);
+  background:var(--grey);color:var(--ink);
+  font-family:var(--font-pixel);font-size:var(--fs-lg);font-weight:400;letter-spacing:.04em;text-transform:uppercase;
+  cursor:pointer;
+  transition:transform .08s steps(2,end),box-shadow .08s steps(2,end);
+  box-shadow:var(--bevel),var(--drop-sm);
 }
-/* The primary action is a lacquer key: lit top edge, accent-deep lip, and it
-   travels 2px when pressed. Touch gets the press; nothing here needs hover. */
-.jv-btn.is-primary{
-  background:var(--accent);background:linear-gradient(180deg,var(--accent-hi),var(--accent) 55%);
-  border-color:transparent;color:var(--accent-ink);font-weight:700;
-  box-shadow:inset 0 1px 0 var(--light-strong),0 2px 0 var(--accent-deep),0 8px 18px var(--accent-glow);
+.jv-btn:active:not(:disabled){transform:translate(2px,2px);box-shadow:var(--bevel)}
+/* The primary action: ink key, paper label (16.5:1). A game with an accent gets its accent. */
+.jv-btn.is-primary{background:var(--accent);border-color:var(--ink);color:var(--accent-ink);box-shadow:var(--drop-sm)}
+.jv-btn.is-primary:active:not(:disabled){transform:translate(2px,2px);box-shadow:none}
+.jv-btn.is-quiet{background:transparent;border-color:transparent;box-shadow:none}
+.jv-btn:disabled{opacity:.5;cursor:not-allowed;box-shadow:none}
+/* Compact is a type and padding step, not a smaller target. */
+.jv-btn.is-compact{padding:0 var(--s3);font-size:var(--fs-md)}
+@media(hover:hover){
+  .jv-btn:hover:not(:disabled){background:var(--paper)}
+  .jv-btn.is-primary:hover:not(:disabled){background:var(--accent);outline:1px solid var(--ink);outline-offset:1px}
+  .jv-btn.is-quiet:hover:not(:disabled){background:var(--accent-soft)}
 }
-.jv-btn.is-primary:active:not(:disabled){transform:translateY(2px);box-shadow:inset 0 1px 0 var(--light-strong),0 0 0 var(--accent-deep),0 3px 8px var(--accent-glow)}
-.jv-btn.is-quiet{background:transparent;box-shadow:none}
-.jv-btn:disabled{opacity:.45;cursor:not-allowed}
-/* Compact is a type and padding step, not a smaller target: it used to drop to
-   36px, under the 44px touch minimum on every phone and tablet. */
-.jv-btn.is-compact{padding:0 var(--s3);font-size:var(--fs-xs)}
-@media(hover:hover){.jv-btn:hover:not(:disabled){border-color:var(--accent)}}
-/* Touch gets the same affordance on press, since hover never fires. */
-.jv-btn:active:not(:disabled){border-color:var(--accent)}
 
 .jv-panel{
-  background:var(--surface);background:linear-gradient(180deg,var(--surface-hi),var(--surface) 7rem);
-  border:1px solid var(--line);border-radius:var(--radius-lg);padding:var(--s5);min-width:0;
+  background:var(--grey);
+  border:1px solid var(--ink);border-radius:0;padding:var(--s5);min-width:0;
   box-shadow:var(--raise);
 }
 .jv-panel.is-tight{padding:var(--s4)}
-/* One step down on phones, for every game. Several had re-declared .jv-panel
-   padding (and mastermind its radius) inside their own media queries, which is
-   how the same component ended up 12, 16 and 24px across the nine. */
 @media(max-width:600px){
   .jv-panel{padding:var(--s4)}
   .jv-panel.is-tight{padding:var(--s3)}
 }
-/* Identity strip along the top of a surface. Nine games drew this with a
-   hardcoded hex; it is the shared --human/--jev pair everywhere now. */
-.jv-panel.is-human{border-top:2px solid var(--human)}
-.jv-panel.is-jev{border-top:2px solid var(--jev)}
+/* Identity strip along the top of a surface: the shared --human/--jev pair. */
+.jv-panel.is-human{border-top:4px solid var(--human)}
+.jv-panel.is-jev{border-top:4px solid var(--jev)}
 
-/* The quiet inline button -- previously .text-button, .link-button and
-   .icon-button across the nine, for one role. */
+/* The quiet inline button. */
 .jv-link-btn{
   display:inline-flex;align-items:center;gap:var(--s1);
   background:none;border:0;padding:0;
-  color:var(--accent-text);font-size:var(--fs-sm);font-weight:600;cursor:pointer;
+  color:var(--ink);font-size:var(--fs-sm);font-weight:700;cursor:pointer;
   text-decoration:underline;text-underline-offset:3px;
   /* A 44px target without moving the baseline of the line it sits in. */
   min-height:var(--tap);
 }
-.jv-link-btn:disabled{opacity:.45;cursor:not-allowed;text-decoration:none}
+.jv-link-btn:disabled{opacity:.5;cursor:not-allowed;text-decoration:none}
 
 /* Board sizing helper: fits width AND height, never overflows, never a fixed px.
-   --fit-max: natural max width. --fit-reserve: vertical space the page needs
-   around the board. --fit-ratio: board width / height. */
+   --fit-max: natural max width. --fit-reserve: vertical space the page needs around the board.
+   --fit-ratio: board width / height. vh first, dvh second, so browsers without dynamic viewport
+   units keep a working cap. max() lets the board grow with the viewport on large screens. */
 .jv-fit{
   width:100%;
-  /* vh first, dvh second: browsers without dynamic viewport units keep a
-     working cap instead of dropping the declaration and overflowing. The three
-     games that had inlined this formula all carried the fallback; the helper
-     did not. */
-  /* --fit-max is a floor on large screens, not a ceiling: max() lets the board
-     grow with the viewport instead of staying its authored size while the
-     window gets wider. The height term still caps it, so a bigger board can
-     never push the rest of the page below the fold. */
   max-width:min(100%,max(var(--fit-max,560px),32vw),calc((100vh - var(--header-h) - var(--fit-reserve,220px)) * var(--fit-ratio,1)));
   max-width:min(100%,max(var(--fit-max,560px),32vw),calc((100dvh - var(--header-h) - var(--fit-reserve,220px)) * var(--fit-ratio,1)));
   margin-inline:auto;
 }
 
-/* Large displays: give the shell the width back, in steps rather than fully
-   fluid so the layout still has settled sizes to design against. Body text is
-   unaffected -- .jv-hero p is capped at 62ch and stays readable. */
+/* Large displays: give the shell the width back, in steps. */
 @media(min-width:1600px){:root{--shell:1440px}}
 @media(min-width:1920px){:root{--shell:1680px}}
 @media(min-width:2400px){:root{--shell:1920px}}
@@ -343,15 +353,11 @@ p{margin:0}
   .jv-wordmark,.jv-sep{display:block}
   .jv-status{max-width:none}
 }
-/* 900-1099 is the tight zone: the controls have just moved into the header but
-   the viewport is still narrow. The "JEV ARCADE" wordmark is redundant there --
-   the mark already carries the brand -- and dropping it frees ~90px, which is
-   what keeps BOTH the game title and the status chip whole.
-   Measured need at 900 (mastermind, the worst case): controls 450 (capped) +
-   status 219 + brand-without-wordmark 127 + gaps 24 + padding 32 = 852 of 900.
-   The alternative -- capping the status chip -- was rejected: it would ellipsise
-   "LOCAL OPPONENT / NOT JEV" to "LOCAL OPPONENT /...", hiding the disclaimer.
-   Provenance labelling must never be truncated into something misleading. */
+/* 900-1099 is the tight zone: the controls have just moved into the header but the viewport is
+   still narrow. The JEVPLAY.GAMES wordmark is redundant there (the mark carries the brand), and
+   dropping it is what keeps BOTH the game title and the status chip whole. Capping the status
+   chip instead was rejected: it would truncate the "local opponent, not Jev" provenance label into something
+   misleading. Provenance labelling must never be truncated. */
 @media(min-width:900px) and (max-width:1099px){
   .jv-wordmark,.jv-sep{display:none}
 }
@@ -359,65 +365,58 @@ p{margin:0}
   /* The token moves with the header, so .jv-fit subtracts the real height. */
   :root{--header-h:64px}
   .jv-menu-btn{display:none}
-  /* The sheet is empty up here (brand.js moved its contents into the header),
-     so it needs no !important fight -- just stay out of the way. */
+  /* The sheet is empty up here (brand.js moved its contents into the header). */
   .jv-sheet,.jv-scrim{display:none}
   /* Same node, now a static flex child of the header: one inline row. */
   #jv-controls{flex-direction:row;align-items:center;gap:var(--s2);width:auto;flex:none}
   /* Still 44px: a tablet in landscape is wider than 900px and is still touch. */
-  #jv-controls .jv-sheet-item{width:auto;min-height:var(--tap);padding:0 var(--s3);font-size:var(--fs-xs);white-space:nowrap}
+  #jv-controls .jv-sheet-item{width:auto;min-height:var(--tap);padding:0 var(--s3);font-size:var(--fs-md);white-space:nowrap}
   #jv-controls .jv-sheet-label{display:none}
   #jv-controls .jv-nav{flex-direction:row;width:auto;gap:var(--s1)}
-  /* A long tab strip scrolls rather than wrapping the header onto two rows
-     (mastermind carries five tabs plus brand, title and status chip).
-     Cap measured against mastermind, the worst case: its controls need 730px
-     natural width. 60vw was too greedy -- at 900px it claimed 540px and crushed
-     the title to 27px. 50vw leaves the title whole across 900-1100, and 46rem
-     (736px) clears the 730px need outright on wide screens, so the strip stops
-     scrolling entirely once there is room for it. */
+  /* A long tab strip scrolls rather than wrapping the header onto two rows. Typecrack (five tabs
+     plus brand, title and status chip) is the worst case: 50vw leaves the title whole across
+     900-1100, and 46rem clears its 730px need outright on wide screens. */
   #jv-controls{max-width:min(50vw,46rem);overflow-x:auto;scrollbar-width:none}
   #jv-controls::-webkit-scrollbar{display:none}
   .jv-main{padding:var(--s5) var(--s5) calc(var(--s7) + var(--sa-b))}
 }
 
-/* ---------- Art layer: shared by all nine boards ----------
-   Games compose these; they do not restate the lighting. Everything is CSS
-   gradients and shadows plus per-game SVG files under /art/ -- no data: URIs
-   (minesweeper's img-src has none), no inline styles, nothing that needs hover. */
+/* ---------- Board layer: shared by all nine boards ----------
+   Games compose these. Everything is flat fills, borders and hard shadows plus per-game SVG files
+   under /art/: no data: URIs (SafeSweep's img-src has none), no inline styles, nothing that needs
+   hover. */
 
-/* The tray a board sits in: a lacquered frame with the board recessed into it
-   and the game's accent glowing underneath. Put it on the board container. */
+/* The tray a board sits in: a grey window with a hard ink shadow. Put it on the board container. */
 .jv-tray{
   position:relative;
-  background:#12141d;background:linear-gradient(160deg,#1d2130,#10121a 70%);
-  border:1px solid var(--line);border-radius:var(--radius-xl);
-  box-shadow:inset 0 1px 0 var(--light),0 2px 0 rgba(0,0,0,.5),0 18px 40px rgba(0,0,0,.45),0 0 60px -18px var(--accent-glow);
+  background:var(--grey);
+  border:1px solid var(--ink);border-radius:0;
+  box-shadow:var(--raise);
 }
 /* A recess: an empty cell, a socket, a slot. */
 .jv-well{background:var(--sunken);box-shadow:var(--well)}
 
-/* Result plaque. The live status line becomes this at the end of a game: same
-   element, same place, so the final board stays fully visible and nothing
-   jumps. The game adds .jv-plaque and one of is-win / is-loss / is-draw, and
-   may point --plaque-art at an SVG medal. */
+/* Result plaque. The live status line becomes this at the end of a game: same element, same
+   place, so the final board stays fully visible and nothing jumps. The game adds .jv-plaque and
+   one of is-win / is-loss / is-draw, and may point --plaque-art at an SVG medal. */
 .jv-plaque{
   display:flex;align-items:center;justify-content:center;gap:var(--s3);
   min-height:var(--tap);padding:var(--s2) var(--s4);
-  border:1px solid var(--line);border-radius:var(--radius-pill);
-  background:var(--raised);box-shadow:var(--raise);
-  font-weight:650;color:var(--text);
-  animation:jv-rise .32s var(--ease-out) both;
+  border:1px solid var(--ink);border-radius:0;
+  background:var(--paper);box-shadow:var(--drop);
+  font-family:var(--font-pixel);font-size:var(--fs-lg);letter-spacing:.04em;text-transform:uppercase;color:var(--ink);
+  animation:jv-rise .24s steps(3,end) both;
 }
 .jv-plaque::before{
   content:"";flex:none;width:28px;height:28px;
   background:var(--plaque-art,none) center/contain no-repeat;
 }
-.jv-plaque.is-win{border-color:var(--accent-line);box-shadow:var(--raise),0 0 28px -6px var(--accent-glow)}
-.jv-plaque.is-loss{border-color:rgba(247,154,164,.35)}
+/* The one magenta highlight: a win. Ink on magenta is 4.9:1. */
+.jv-plaque.is-win{background:var(--magenta);color:var(--ink)}
+.jv-plaque.is-loss{background:var(--grey)}
 
-/* Empty state: a small piece of the game's own art above the sentence, so an
-   empty table or panel still looks like this game. --empty-art is set once per
-   game in game.css. */
+/* Empty state: a small piece of the game's own art above the sentence. --empty-art is set once
+   per game in game.css. */
 .jv-empty{
   display:flex;flex-direction:column;align-items:center;gap:var(--s3);
   padding:var(--s5) var(--s4);text-align:center;
@@ -425,31 +424,27 @@ p{margin:0}
 }
 .jv-empty::before{
   content:"";width:64px;height:64px;
-  background:var(--empty-art,none) center/contain no-repeat;opacity:.9;
+  background:var(--empty-art,none) center/contain no-repeat;
 }
 
-/* Motion vocabulary. A piece arriving, a result rising, a win glowing. Games
-   apply these to their own elements; the reduced-motion rule below ends them. */
-@keyframes jv-pop{0%{opacity:0;transform:scale(.45)}62%{opacity:1;transform:scale(1.09)}100%{opacity:1;transform:scale(1)}}
+/* Motion vocabulary. Short and stepped, like a pixel UI: a piece arriving, a result rising, a
+   win blinking. Games apply these to their own elements; the reduced-motion rule ends them. */
+@keyframes jv-pop{0%{opacity:0;transform:scale(.5)}60%{opacity:1;transform:scale(1.08)}100%{opacity:1;transform:scale(1)}}
 @keyframes jv-drop{0%{opacity:0;transform:translateY(-38%)}70%{opacity:1;transform:translateY(3%)}100%{transform:translateY(0)}}
-@keyframes jv-rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
-@keyframes jv-glow{0%,100%{filter:brightness(1)}50%{filter:brightness(1.22)}}
+@keyframes jv-rise{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@keyframes jv-glow{0%,100%{opacity:1}50%{opacity:.55}}
 @keyframes jv-breathe{0%,100%{opacity:1}50%{opacity:.35}}
+@keyframes jv-blink{0%,49%{opacity:1}50%,100%{opacity:0}}
 
 /* ---------- Short frames: landscape phones and Discord picture-in-picture ----------
-   An Activity can be popped out into a frame a few hundred pixels tall, and the
-   page has no say in its size. Three steps, each giving the board more of it:
-   - under 420px tall (a landscape phone too): a 44px header, no wordmark,
-     tight gutters. Every control is still there.
-   - under 420px tall AND under 640px wide (picture-in-picture): anything that
-     is not the board, its status or the next-game button goes. Games mark
-     those blocks .jv-pip-hide.
-   - under 240px tall: the header goes as well, because three 44px cells and a
-     44px header do not fit in 180px. */
+   - under 420px tall: a 44px header, no wordmark, tight gutters. Every control is still there.
+   - under 420px tall AND under 640px wide (picture-in-picture): anything that is not the board,
+     its status or the next-game button goes. Games mark those blocks .jv-pip-hide.
+   - under 240px tall: the header goes as well. */
 @media(max-height:420px){
   :root{--header-h:44px}
   .jv-wordmark,.jv-sep{display:none}
-  .jv-mark{width:26px;height:26px;border-radius:7px}
+  .jv-mark{width:26px;height:26px}
   .jv-main{padding:var(--s2) var(--s2) calc(var(--s2) + var(--sa-b));gap:var(--s2)}
 }
 @media(max-height:420px) and (max-width:640px){
