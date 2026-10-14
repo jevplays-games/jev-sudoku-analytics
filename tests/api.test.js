@@ -13,7 +13,7 @@ test('HTTP security headers, static assets, and unauthenticated boundaries', asy
   assert.ok(r.headers.get('content-security-policy').includes("frame-ancestors 'none'"));
   assert.equal(r.headers.get('x-content-type-options'), 'nosniff');
   assert.equal(r.headers.get('strict-transport-security'), null, 'no HSTS on a loopback origin');
-  assert.ok((await r.text()).includes('Sudoku Duel'));
+  assert.ok((await r.text()).includes('<title>Typedoku · jevplay.games</title>'));
   assert.equal((await x.send('/server/config.js')).status, 404, 'server source is not a static asset');
   assert.equal((await x.send('/migrations/0001.sql')).status, 404);
   assert.equal((await anon.send('/api/analytics/me')).status, 401);
@@ -24,12 +24,12 @@ test('HTTP security headers, static assets, and unauthenticated boundaries', asy
   assert.equal((await (await x.send('/api/health')).json()).status, 'ok');
 });
 test('production origins add HSTS and Secure cookies', async () => {
-  const env = environment({ APP_ORIGIN: 'https://sudoku.jevplay.games' }), r = await handle(new Request('https://sudoku.jevplay.games/api/me', { headers: { 'cf-connecting-ip': '198.51.100.7' } }), env, context());
+  const env = environment({ APP_ORIGIN: 'https://typedoku.jevplay.games' }), r = await handle(new Request('https://typedoku.jevplay.games/api/me', { headers: { 'cf-connecting-ip': '198.51.100.7' } }), env, context());
   assert.match(r.headers.get('strict-transport-security'), /max-age=31536000/);
   assert.match(r.headers.get('set-cookie'), /; Secure/); assert.match(r.headers.get('set-cookie'), /HttpOnly/); assert.match(r.headers.get('set-cookie'), /SameSite=Lax/);
 });
 test('a misconfigured production Worker fails closed with a generic 503', async () => {
-  const env = environment({ APP_ORIGIN: 'https://sudoku.jevplay.games', LAUNCH_SIGNING_KEY: '' }), r = await handle(new Request('https://sudoku.jevplay.games/api/me'), env, context());
+  const env = environment({ APP_ORIGIN: 'https://typedoku.jevplay.games', LAUNCH_SIGNING_KEY: '' }), r = await handle(new Request('https://typedoku.jevplay.games/api/me'), env, context());
   assert.equal(r.status, 503); assert.deepEqual(await r.json(), { error: 'configuration_invalid' });
 });
 test('HTTP create/start/action/analytics and strict ownership', async () => {
@@ -109,8 +109,31 @@ test('the analytics endpoint can omit per-decision candidate evidence, and repla
   assert.deepEqual({ ...lean, jev: { ...lean.jev, decisions: undefined } }, { ...full, jev: { ...full.jev, decisions: undefined } });
   const replay = await x.send(`/api/matches/${p.id}/replay`), text = await replay.text(), parsed = JSON.parse(text);
   assert.equal(parsed.format, 'jev-sudoku-replay'); assert.equal(parsed.events.length, full.jev.decisions.length + (await env.DB.prepare("SELECT COUNT(*) n FROM match_events WHERE json_extract(event_json,'$.type')!='jev'").first()).n);
-  assert.match(replay.headers.get('content-disposition'), /sudoku-replay\.json/);
+  assert.match(replay.headers.get('content-disposition'), /typedoku-replay\.json/);
   const { replayEvents } = await import('../public/shared/replay.js'); assert.equal(replayEvents(parsed).outcome, 'jev');
+});
+test('a replay exported before the Typedoku rename still loads, and the replay format identifier is unchanged', async () => {
+  const { replayEvents, makeReplay, REPLAY_FORMATS } = await import('../public/shared/replay.js');
+  const { readFileSync } = await import('node:fs');
+  // Exported by main@b46cbf4 (Sudoku Duel) through GET /api/matches/:id/replay.
+  const old = JSON.parse(readFileSync(new URL('../fixtures/pre-rename-replay.json', import.meta.url), 'utf8'));
+  assert.equal(old.format, 'jev-sudoku-replay'); assert.equal(replayEvents(old).outcome, 'jev');
+  assert.equal(replayEvents({ ...old, format: 'jev-typedoku-replay' }).outcome, 'jev', 'the new identifier is accepted too');
+  assert.throws(() => replayEvents({ ...old, format: 'jev-arcade-replay' }), /unsupported_replay/);
+  assert.deepEqual(REPLAY_FORMATS, ['jev-sudoku-replay', 'jev-typedoku-replay']);
+  assert.equal(makeReplay(old.initial, old.events, old.finalState).format, 'jev-sudoku-replay');
+});
+test('one deployment serves the canonical and the legacy hostname, and each host only accepts its own Origin', async () => {
+  const hosts = { APP_ORIGIN: 'https://typedoku.jevplay.games', LEGACY_APP_ORIGINS: 'https://sudoku.jevplay.games', DISCORD_CLIENT_ID: '1234567890', DISCORD_CLIENT_SECRET: 'secret' };
+  for (const [origin, other] of [['https://typedoku.jevplay.games', 'https://sudoku.jevplay.games'], ['https://sudoku.jevplay.games', 'https://typedoku.jevplay.games']]) {
+    const env = environment(hosts), send = (path, init = {}, cookie) => handle(new Request(origin + path, { ...init, headers: { 'cf-connecting-ip': '198.51.100.8', ...(cookie ? { cookie } : {}), ...init.headers } }), env, context());
+    const me = await send('/api/me'), cookie = me.headers.get('set-cookie').split(';')[0], { csrfToken } = await me.json();
+    const create = o => send('/api/matches', { method: 'POST', headers: { origin: o, 'x-csrf-token': csrfToken, 'content-type': 'application/json' }, body: JSON.stringify({ requestId: `host-${Math.random().toString(36).slice(2, 12)}`, mode: 'practice' }) }, cookie);
+    assert.equal((await create(origin)).status, 201, `${origin} accepts its own Origin`);
+    assert.equal((await create(other)).status, 403, `${origin} refuses a page from ${other}`);
+    const login = await send('/api/auth/discord', {}, cookie);
+    assert.equal(new URL(login.headers.get('location')).searchParams.get('redirect_uri'), `${origin}/api/auth/discord/callback`, 'OAuth returns to the host the player is on');
+  }
 });
 test('full candidate evidence is refused above a CPU-safe size, while the lean view and the replay still serve the whole game', async () => {
   const env = environment({ PRACTICE_PACING_MS: '1000' }), x = await client(env), p = (await x.create({ difficulty: 'easy' })).body; await x.start(p.id);

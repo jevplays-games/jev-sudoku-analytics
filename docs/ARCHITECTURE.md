@@ -12,7 +12,7 @@ flowchart LR
     API -->|Redacted state| UI
     API --> Match[Authoritative match lifecycle: lazy advance]
     Match --> Rules[Shared deterministic Sudoku engine]
-    Match --> Adapter[Validated JEV Choice adapter]
+    Match --> Adapter[Validated Jev Choice adapter]
     Adapter --> TypeSafe[TypeSafe API]
     API --> Discord[Discord OAuth and signed interactions]
     Match --> DB[(D1 / SQLite)]
@@ -21,13 +21,13 @@ flowchart LR
     Rules --> Replay[Replay reconstruction]
 ```
 
-The browser renders from data rather than reading board state back from the DOM. It performs immediate local legality checks but never sets official timestamps, scores, opponent decisions or community identities. The server owns independent human/JEV arrays, ordered events, candidate validation and eligibility.
+The browser renders from data rather than reading board state back from the DOM. It performs immediate local legality checks but never sets official timestamps, scores, opponent decisions or community identities. The server owns independent human/Jev arrays, ordered events, candidate validation and eligibility.
 
 ```mermaid
 flowchart TB
     Browser[Untrusted browser / local storage / URL] --> Check[Session + CSRF + schema + ownership]
     Check --> Trusted[Trusted match state and event log]
-    Provider[External typed JEV response] --> Validate[Model / probabilities / action / proof validation]
+    Provider[External typed Jev response] --> Validate[Model / probabilities / action / proof validation]
     Validate --> Trusted
     Trusted --> Projection[Explicit redacted public projection]
     Projection --> Browser
@@ -40,30 +40,30 @@ There is no generic score-submission API, public arbitrary model proxy, query-pa
 
 ## Rules and state
 
-`public/shared/sudoku.js` defines 81-cell row-major boards, all 27 units, candidate masks, immutable clues, human transitions, consistency and completion. The exact uniqueness solver is used for puzzle generation and testing, not to supply JEV's answers.
+`public/shared/sudoku.js` defines 81-cell row-major boards, all 27 units, candidate masks, immutable clues, human transitions, consistency and completion. The exact uniqueness solver is used for puzzle generation and testing, not to supply Jev's answers.
 
-`public/shared/match.js` adds phase, elapsed milliseconds, sequential revisions, outcome, configuration and eligibility. Human state owns values/undo/revision/finish. JEV state separately owns values/eliminations/branches/revision/status/last action time.
+`public/shared/match.js` adds phase, elapsed milliseconds, sequential revisions, outcome, configuration and eligibility. Human state owns values/undo/revision/finish. Jev state separately owns values/eliminations/branches/revision/status/last action time.
 
 Events include `start`, `human`, `jev`, `jev_stalled`, `eligibility`, `settle`, `timeout`, and `void`. Functions receive timestamps; the pure engine does not read wall clocks or the DOM. A pending reservation expires after five minutes or at its daily challenge boundary. Expiration releases capacity without providing another official attempt for the same challenge. A running attempt that its owner has not touched for `ABANDONED_AFTER_MS` is voided. Opponent events are stamped with their scheduled time, and the events are applied lazily when a request touches the match ([WORKERS.md](WORKERS.md)).
 
-`ready → running → settling → finished` is the normal human-first path. A JEV finish leaves the human running. Same-second completions tie. The server closes the human finish bucket before applying a later opponent step. A profile without a deduction becomes stalled rather than inventing a move.
+`ready → running → settling → finished` is the normal human-first path. A Jev finish leaves the human running. Same-second completions tie. The server closes the human finish bucket before applying a later opponent step. A profile without a deduction becomes stalled rather than inventing a move.
 
-## JEV decision path
+## Jev decision path
 
 ```mermaid
 flowchart TD
-    Board[JEV current board only] --> Detect[Enabled technique detectors]
+    Board[Jev current board only] --> Detect[Enabled technique detectors]
     Detect --> Bound[Deduplicate and bound candidates]
     Bound --> Preview[Bounded feature previews]
     Preview --> Choice{Only one candidate?}
     Choice -->|Yes| Forced[Explicit forced transition]
-    Choice -->|No| JEV[TypeSafe Choice evaluation]
-    JEV --> Validate[Strict distribution and action validation]
+    Choice -->|No| Jev[TypeSafe Choice evaluation]
+    Jev --> Validate[Strict distribution and action validation]
     Validate --> Pace[Minimum action cadence]
     Forced --> Pace
     Pace --> Apply[Regenerate proof and apply one effect]
     Apply --> Board
-    JEV -->|Bounded failure handling| Fallback[Downgrade to practice; labeled heuristic]
+    Jev -->|Bounded failure handling| Fallback[Downgrade to practice; labeled heuristic]
 ```
 
 | Profile | Techniques | Maximum candidates | Preview transition budget |
@@ -71,11 +71,11 @@ flowchart TD
 | Easy | Naked singles | 8 | 0 |
 | Normal | Easy + hidden singles, locked candidates | 16 | 32 |
 | Hard | Normal + naked/hidden pairs, X-Wing | 32 | 256 |
-| JEV | Hard + naked triples, explicit assumption/backtracking | 64 | 2,048 |
+| Jev | Hard + naked triples, explicit assumption/backtracking | 64 | 2,048 |
 
 Each candidate is one certified placement/elimination or explicit search transition. Preview work uses temporary state and does not automatically play its derived moves. MRV assumptions retain alternatives, restore branch snapshots on contradiction, and rule out the failed assumption.
 
-`server/jev.js` sends one `next_action` Choice question to the pinned model. Inputs include JEV's values, givens, explicit candidates and features—not human entries, identity, a saved solution or the private generator seed. The output must match the model, question, candidate membership, numeric ranges and probability mass. The selected action is validated again against current revision/proof.
+`server/jev.js` sends one `next_action` Choice question to the pinned model. Inputs include Jev's values, givens, explicit candidates and features—not human entries, identity, a saved solution or the private generator seed. The output must match the model, question, candidate membership, numeric ranges and probability mass. The selected action is validated again against current revision/proof.
 
 Deterministic replay uses recorded selections; an external service is not assumed repeatable. API timeout/retry handling is bounded. Failed selection switches to practice with `heuristic_fallback`; all subsequent use remains explicit. Forced steps are recorded separately and do not make an outbound call.
 
@@ -97,7 +97,7 @@ sequenceDiagram
     S-->>B: HttpOnly cookie and clean redirect
 ```
 
-Authentication establishes a Discord user. Separately, a signature-verified `/jev sudoku` interaction establishes invocation in a guild/channel. A ten-minute signed launch token is bound to that user and a one-use nonce. The token is delivered in a URL fragment to avoid ordinary query logging. Redemption after login must match the subject; resulting context expires after one hour and is copied into a new match. This proves invocation-time context, not permanent channel membership.
+Authentication establishes a Discord user. Separately, a signature-verified `/jev typedoku` interaction establishes invocation in a guild/channel. A ten-minute signed launch token is bound to that user and a one-use nonce. The token is delivered in a URL fragment to avoid ordinary query logging. Redemption after login must match the subject; resulting context expires after one hour and is copied into a new match. This proves invocation-time context, not permanent channel membership.
 
 World results require Discord and an official challenge, but not a community launch. Server/channel queries require fresh server-held context. Raw IDs supplied by a browser are never authorization.
 
@@ -112,7 +112,7 @@ Browser mutations use `application/json`, a same-origin `Origin`, the HttpOnly s
 | `GET /api/auth/discord` | Begin authorization-code OAuth. |
 | `GET /api/auth/discord/callback` | Validate state, exchange code, fetch identity, rotate session. |
 | `POST /api/logout` | Revoke current session. |
-| `POST /api/discord/interactions` | Signature-verified ping or `/jev sudoku`; ephemeral personal launch link. |
+| `POST /api/discord/interactions` | Signature-verified ping or `/jev typedoku`; ephemeral personal launch link. |
 | `POST /api/context` | `{launch}`; redeem signed user-bound context once. |
 | `POST /api/matches` | `{requestId,difficulty,mode}`; reserve server-selected puzzle. Givens are withheld until start. |
 | `POST /api/matches/:id/start` | `{}`; start owner match and return first board snapshot. |
@@ -149,7 +149,7 @@ flowchart LR
     Commit --> Leaderboard[Same-challenge daily solve-time ranking]
 ```
 
-Leaderboard rank is based on the human completion's elapsed one-second bucket, independent of whether JEV won. Ties share `RANK()` values. Comparisons are always within the same daily challenge/profile. Pagination has a bounded limit and filter-bound cursor; membership/context is independently rechecked on every request.
+Leaderboard rank is based on the human completion's elapsed one-second bucket, independent of whether Jev won. Ties share `RANK()` values. Comparisons are always within the same daily challenge/profile. Pagination has a bounded limit and filter-bound cursor; membership/context is independently rechecked on every request.
 
 ## Files and dependencies
 

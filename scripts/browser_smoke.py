@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""End-to-end Chromium checks. Requires Python Playwright; never calls paid JEV."""
+"""End-to-end Chromium checks. Requires Python Playwright; never calls paid Jev."""
 from __future__ import annotations
 import json, os, shutil, socket, subprocess, tempfile, time, urllib.request, urllib.error, http.cookiejar, re
 from pathlib import Path
@@ -220,7 +220,7 @@ def run() -> None:
             # Isolated temporary server/database only. No user service is terminated.
             process.kill(); process.wait(timeout=10); log.close()
     result={'suite':'Chromium end-to-end smoke','passed':len(checks),'failed':0,'checks':checks,
-            'externalServices':'No real Discord or JEV calls. Browser used local heuristic.',
+            'externalServices':'No real Discord or Jev calls. Browser used local heuristic.',
             'browserTransport':'Localhost Python HTTP bridge; managed browser blocked URL navigation' if BRIDGE_MODE else 'Native browser HTTP (the game polls; there is no event stream)',
             'screenshots':['desktop-game.png','desktop-analytics.png','mobile-game.png']}
     (REPORTS/'browser-results.json').write_text(json.dumps(result,indent=2)+'\n',encoding='utf-8')

@@ -1,4 +1,4 @@
--- JEV Sudoku on Cloudflare D1. Derived from the container-era db/schema.sql (now removed) with the changes the Workers
+-- Typedoku (formerly Sudoku Duel) on Cloudflare D1. Derived from the container-era db/schema.sql (now removed) with the changes the Workers
 -- runtime needs: optimistic-concurrency revision, durable decision leases, D1-backed quotas, a practice puzzle pool and a
 -- compact per-result summary. D1 does not accept PRAGMA statements in migrations, so foreign keys are always on (as in D1).
 CREATE TABLE IF NOT EXISTS users (

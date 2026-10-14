@@ -33,7 +33,7 @@ An optional `npm run test:coverage` command is supplied; no coverage percentage 
 
 ## Browser scenarios
 
-The smoke test launches real headless Chromium against a temporary local server (the Worker behind the Node adapter, temporary SQLite), checks the actual HTML/CSS/ES-module UI on desktop 1440px and mobile 390px, enters values through keyboard events, and uses a test-only exact solver to supply digits (never passed to JEV). Nine scenarios: both 81-cell boards, honest local-opponent labeling, pencil marks, entry/undo acknowledgements, opt-in telemetry preference, analytics chart/heatmap, JSON download, full puzzle completion with a verified server result, replay scrubbing, leaderboard empty/unauthorized states, reload recovery, mobile overflow/rules access and uncaught JavaScript errors. The game polls (there is no event stream), so no polling simulation is used; the accelerated practice pacing is 2 seconds.
+The smoke test launches real headless Chromium against a temporary local server (the Worker behind the Node adapter, temporary SQLite), checks the actual HTML/CSS/ES-module UI on desktop 1440px and mobile 390px, enters values through keyboard events, and uses a test-only exact solver to supply digits (never passed to Jev). Nine scenarios: both 81-cell boards, honest local-opponent labeling, pencil marks, entry/undo acknowledgements, opt-in telemetry preference, analytics chart/heatmap, JSON download, full puzzle completion with a verified server result, replay scrubbing, leaderboard empty/unauthorized states, reload recovery, mobile overflow/rules access and uncaught JavaScript errors. The game polls (there is no event stream), so no polling simulation is used; the accelerated practice pacing is 2 seconds.
 
 ```bash
 python -m pip install -r requirements-dev.txt
@@ -57,7 +57,7 @@ Isolated temporary database: unique daily publication and non-overwrite, wrangle
 npm run benchmark -- --puzzles 2 --split smoke --out reports/benchmark.json
 ```
 
-Two independently seeded synthetic puzzle families, four technique profiles and three selectors (canonical first, deterministic greedy, seeded random), each receiving the same bounded candidate generation. Candidate generation is byte-identical to the version that produced the shipped `reports/benchmark.json` (pinned by the golden test), so that report remains valid for the policy; it says nothing about the scheduling model. `liveJevUsed=false`: **it measures local selection baselines, not TypeSafe JEV quality.** For an explicit paid run add `--live --selectors jev` (requires a key; it can generate many requests and is not constrained by the web-match request budget). Use separate `development` and `holdout` seed namespaces and archive configs and transcripts.
+Two independently seeded synthetic puzzle families, four technique profiles and three selectors (canonical first, deterministic greedy, seeded random), each receiving the same bounded candidate generation. Candidate generation is byte-identical to the version that produced the shipped `reports/benchmark.json` (pinned by the golden test), so that report remains valid for the policy; it says nothing about the scheduling model. `liveJevUsed=false`: **it measures local selection baselines, not TypeSafe Jev quality.** For an explicit paid run add `--live --selectors jev` (requires a key; it can generate many requests and is not constrained by the web-match request budget). Use separate `development` and `holdout` seed namespaces and archive configs and transcripts.
 
 ## Not tested
 

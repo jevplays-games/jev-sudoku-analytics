@@ -16,9 +16,12 @@ function buildConfig(env) {
   const production = env.NODE_ENV === 'production' || (originUrl.protocol === 'https:' && !loopback);
   if (production && !origin.startsWith('https://')) throw new Error('APP_ORIGIN must use HTTPS in production');
   if (production && (!env.LAUNCH_SIGNING_KEY || env.LAUNCH_SIGNING_KEY.length < 32)) throw new Error('Set a random LAUNCH_SIGNING_KEY of at least 32 characters');
+  // Hostnames still served during a rename (comma-separated origins). The canonical APP_ORIGIN is the one new links use.
+  const legacyOrigins = String(env.LEGACY_APP_ORIGINS || '').split(',').map(x => x.trim()).filter(Boolean).map(x => new URL(x).origin).filter(x => x !== origin);
+  if (production && legacyOrigins.some(x => !x.startsWith('https://'))) throw new Error('LEGACY_APP_ORIGINS must use HTTPS in production');
   const discordClientId = env.DISCORD_CLIENT_ID || '';
   return {
-    production, origin, activityOrigin: /^\d{5,25}$/.test(discordClientId) ? `https://${discordClientId}.discordsays.com` : null,
+    production, origin, origins: [origin, ...legacyOrigins], activityOrigin: /^\d{5,25}$/.test(discordClientId) ? `https://${discordClientId}.discordsays.com` : null,
     launchKey: env.LAUNCH_SIGNING_KEY || randomKey(), discordClientId, discordClientSecret: env.DISCORD_CLIENT_SECRET || '',
     discordPublicKey: env.DISCORD_PUBLIC_KEY || '', jevKey: env.TYPESAFE_API_KEY || '', jevModel: env.JEV_MODEL || 'jev-1.13.0',
     jevEndpoint: 'https://api.typesafe.ai/v1/systemone', pacingMs: int('PRACTICE_PACING_MS', 8000, 250, 60000),
@@ -36,3 +39,6 @@ function buildConfig(env) {
     stepBudget: { easy: 6, normal: 3, hard: 1, jev: 1 }, modelStepBudget: 3
   };
 }
+// The origin a request was sent to when it is one this app serves, otherwise the canonical origin. OAuth callbacks and CSRF checks use
+// it, so a player on a legacy hostname stays on that hostname (its cookie is scoped there) until the old host is redirected.
+export const servedOrigin = (config, url) => { const o = new URL(url).origin; return (config.origins ?? [config.origin]).includes(o) ? o : config.origin; };

@@ -1,3 +1,5 @@
+> Historical source prompt, kept verbatim; it predates the jevplay.games rebrand and the Typedoku name and is not updated.
+
 # JEV Single-Page Game — Architecture & Implementation Planning Prompt
 
 You are a senior game engineer, web architect, security engineer, and JEV/TypeSafe AI integration engineer.
