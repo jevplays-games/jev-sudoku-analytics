@@ -17,7 +17,7 @@
 
 ---
 
-Typedoku is a Sudoku duel: you and Jev get the same puzzle on separate boards, and the first correct completion wins. Jev answers each move as a typed `Choice` question, so every digit it places comes with validated evidence you can inspect. It is a single-page, framework-free game on one **Cloudflare Worker with D1** at **https://typedoku.jevplay.games**, part of [jevplay.games](https://jevplay.games); it was called Sudoku Duel before the rename.
+Typedoku is a Sudoku race: you and Jev get the same puzzle on separate boards, and the first correct completion wins. Jev answers each move as a typed `Choice` question, so every digit it places comes with validated evidence you can inspect. It is a single-page, framework-free game on one **Cloudflare Worker with D1** at **https://typedoku.jevplay.games**, part of [jevplay.games](https://jevplay.games); it was called Sudoku Duel before the rename.
 
 > [!NOTE]
 > **What is shipped and measured.** This is a runnable implementation, not a claim of production certification. No live Discord account or paid Jev key was available during assembly; external flows were tested with mocks and cryptographic fixtures, and the included benchmark measures local selectors, not Jev's actual strength. See [Release boundaries](#release-boundaries).
