@@ -70,7 +70,10 @@ install is needed. Log in once with `npx wrangler login`.
 
    **Both hostnames.** `APP_ORIGIN` is the canonical origin (new Discord launch links use it). `LEGACY_APP_ORIGINS` lists origins that are
    still served, comma-separated. A request keeps the host it arrived on: its CSRF `Origin` must be that host, and Discord sign-in returns
-   to that host (sessions are host-scoped cookies). Once `sudoku.jevplay.games/*` is a 301 to `typedoku.jevplay.games/$1`, remove the
+   to that host (sessions are host-scoped cookies). Each `LEGACY_APP_ORIGINS` entry must be a bare origin exactly as browsers send it:
+   lowercase host, no default port, no path, query, fragment or credentials (`https://sudoku.jevplay.games`, optionally with one
+   trailing `/`). Anything else, including `https://Sudoku.jevplay.games` or `https://sudoku.jevplay.games:443`, is skipped with a
+   `legacy_origins_skipped` warning rather than normalised. Once `sudoku.jevplay.games/*` is a 301 to `typedoku.jevplay.games/$1`, remove the
    legacy route and var.
 
 5. **Publish ranked daily puzzles** (only needed for ranked play). They are secret until played, so they are generated locally and
