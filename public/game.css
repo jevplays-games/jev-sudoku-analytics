@@ -7,8 +7,9 @@
   --cell:var(--paper);--cell-given:var(--grey);--cell-line:var(--line-soft);--box-line:var(--ink);
   --cell-peer:color-mix(in srgb,var(--ink) 7%,var(--paper));--cell-given-peer:color-mix(in srgb,var(--ink) 16%,var(--grey));
   --cell-same:color-mix(in srgb,var(--magenta) 16%,var(--paper));
-  /* Chart series on the paper chart window: blue is 4.8:1; raw amber is 2.1:1, so Jev's line is amber deepened with ink (4.5:1). */
-  --chart-human:var(--human);--chart-jev:color-mix(in srgb,var(--jev) 60%,var(--ink));
+  /* Chart series, orchestrator decision D8 (.rebrand/shared/CHART_COLOURS.md): the brand blue/amber fail on grey, so charts use
+     these until the hub brand.css carries them. Jev's series is also dashed; legend text is ink; charts never sit on pink. */
+  --chart-jev:#7A4E0B;--chart-human:#155A80;
   --empty-art:url(/art/empty.svg)
 }
 body{font-size:var(--fs-sm)}button,input,select{font:inherit}
@@ -128,14 +129,16 @@ kbd{font:var(--fs-xs)/1 var(--font-pixel);color:inherit;padding:1px 4px;border:1
 .chart-human{stroke:var(--chart-human);fill:none;stroke-width:3}
 .chart-jev{stroke:var(--chart-jev);fill:none;stroke-width:3;stroke-dasharray:6 3}
 .chart-text{fill:var(--ink);font-family:var(--font-pixel);font-size:var(--fs-sm)}
+/* The chart's 580-unit viewBox shrinks to about 0.6 on a phone; larger user-unit text keeps axis labels near 13px there. */
+@media(max-width:600px){.chart-text{font-size:22px}}
 .chart-legend{display:flex;flex-wrap:wrap;gap:var(--s5);font-size:var(--fs-xs);margin:var(--s2) 0 0;color:var(--ink)}
 .legend-dot{display:inline-block;width:14px;height:4px;background:var(--chart-human);vertical-align:middle;margin-right:var(--s2)}
 .legend-dot.jev{background:linear-gradient(90deg,var(--chart-jev) 0 60%,transparent 60% 100%) 0 0/7px 4px}
 .heatmap{display:grid;grid-template-columns:repeat(9,minmax(0,1fr));gap:2px;max-width:20rem;margin:auto;padding:2px;background:var(--ink);border:1px solid var(--ink)}
 .heatcell{aspect-ratio:1;background:var(--paper);display:grid;place-items:center;border-radius:0;font-family:var(--font-pixel);font-size:var(--fs-md);color:var(--ink)}
-.heat-1{background:color-mix(in srgb,var(--human) 15%,var(--paper))}.heat-2{background:color-mix(in srgb,var(--human) 30%,var(--paper))}
-.heat-3{background:color-mix(in srgb,var(--human) 48%,var(--paper))}
-.heat-4{background:color-mix(in srgb,var(--human) 78%,var(--ink));color:var(--paper)}.heat-5{background:color-mix(in srgb,var(--human) 55%,var(--ink));color:var(--paper)}
+.heat-1{background:color-mix(in srgb,var(--chart-human) 12%,var(--paper))}.heat-2{background:color-mix(in srgb,var(--chart-human) 24%,var(--paper))}
+.heat-3{background:color-mix(in srgb,var(--chart-human) 38%,var(--paper))}
+.heat-4{background:color-mix(in srgb,var(--chart-human) 80%,var(--paper));color:var(--paper)}.heat-5{background:var(--chart-human);color:var(--paper)}
 .metrics-grid{display:grid;grid-template-columns:1fr 1fr;gap:var(--s4)}
 .metric-list{margin:0}.metric-row{display:flex;justify-content:space-between;gap:var(--s5);padding:var(--s2) 0;border-bottom:1px solid var(--line-soft);font-size:var(--fs-xs)}
 .metric-row dt{color:var(--muted)}.metric-row dd{margin:0;font-family:var(--mono);font-size:var(--fs-md);font-variant-numeric:tabular-nums}.metric-row:last-child{border-bottom:0}
