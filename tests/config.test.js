@@ -35,3 +35,12 @@ test('config is derived from the Discord client id and cached per env object', (
   assert.equal(loadConfig(env), c);
   assert.equal(loadConfig({ APP_ORIGIN: 'http://localhost:3000' }).activityOrigin, null);
 });
+test('malformed or insecure LEGACY_APP_ORIGINS entries are skipped instead of breaking every request', async () => {
+  const { handle } = await import('../server/worker.js'); const { environment, context } = await import('./helpers.js');
+  const config = loadConfig({ APP_ORIGIN: 'https://typedoku.jevplay.games', LAUNCH_SIGNING_KEY: 'a'.repeat(64),
+    LEGACY_APP_ORIGINS: 'not a url, https://sudoku.jevplay.games/some/path , http://plain.jevplay.games,javascript:alert(1),,https://typedoku.jevplay.games,https://sudoku.jevplay.games' });
+  assert.deepEqual(config.origins, ['https://typedoku.jevplay.games', 'https://sudoku.jevplay.games']);
+  const env = environment({ APP_ORIGIN: 'https://typedoku.jevplay.games', LEGACY_APP_ORIGINS: '::::,https://sudoku.jevplay.games' });
+  const r = await handle(new Request('https://typedoku.jevplay.games/api/health'), env, context());
+  assert.equal(r.status, 200);
+});

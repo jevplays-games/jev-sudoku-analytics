@@ -17,8 +17,10 @@ function buildConfig(env) {
   if (production && !origin.startsWith('https://')) throw new Error('APP_ORIGIN must use HTTPS in production');
   if (production && (!env.LAUNCH_SIGNING_KEY || env.LAUNCH_SIGNING_KEY.length < 32)) throw new Error('Set a random LAUNCH_SIGNING_KEY of at least 32 characters');
   // Hostnames still served during a rename (comma-separated origins). The canonical APP_ORIGIN is the one new links use.
-  const legacyOrigins = String(env.LEGACY_APP_ORIGINS || '').split(',').map(x => x.trim()).filter(Boolean).map(x => new URL(x).origin).filter(x => x !== origin);
-  if (production && legacyOrigins.some(x => !x.startsWith('https://'))) throw new Error('LEGACY_APP_ORIGINS must use HTTPS in production');
+  // A malformed entry, or a plain-http one in production, is skipped rather than failing every request: the canonical origin still works.
+  const parsedOrigin = x => { try { const u = new URL(x); return /^https?:$/.test(u.protocol) && u.host ? u.origin : null; } catch { return null; } };
+  const legacyOrigins = [...new Set(String(env.LEGACY_APP_ORIGINS || '').split(',').map(x => parsedOrigin(x.trim())))]
+    .filter(x => x && x !== origin && (!production || x.startsWith('https://')));
   const discordClientId = env.DISCORD_CLIENT_ID || '';
   return {
     production, origin, origins: [origin, ...legacyOrigins], activityOrigin: /^\d{5,25}$/.test(discordClientId) ? `https://${discordClientId}.discordsays.com` : null,
