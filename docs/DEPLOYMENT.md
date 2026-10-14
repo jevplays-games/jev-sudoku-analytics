@@ -91,7 +91,7 @@ install is needed. Log in once with `npx wrangler login`.
      `https://sudoku.jevplay.games/api/auth/discord/callback`.
    - Register the slash command from your machine with the same variables in `.env`: `npm run discord:register`
      (`DISCORD_TEST_GUILD_ID` limits it to one guild for instant registration).
-   - The slash command is `/jev typedoku`. the old `sudoku` subcommand is still accepted because Discord clients cache the old registration, and
+   - The slash command is `/jev typedoku`. The old `sudoku` subcommand is still accepted because Discord clients cache the old registration, and
      launch tokens signed before the rename (`aud: 'jev-arcade'`, `game: 'sudoku'`) still verify for their ten minutes. Drop both
      compat paths (`SUBCOMMANDS` in `server/auth.js`, `LEGACY_LAUNCH_AUDIENCES` in `server/security.js`) one deploy after the rename.
    - Activity mode: see [ACTIVITY.md](ACTIVITY.md) (URL mapping `/` to `typedoku.jevplay.games`).

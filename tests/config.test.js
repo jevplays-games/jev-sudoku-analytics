@@ -38,9 +38,36 @@ test('config is derived from the Discord client id and cached per env object', (
 test('malformed or insecure LEGACY_APP_ORIGINS entries are skipped instead of breaking every request', async () => {
   const { handle } = await import('../server/worker.js'); const { environment, context } = await import('./helpers.js');
   const config = loadConfig({ APP_ORIGIN: 'https://typedoku.jevplay.games', LAUNCH_SIGNING_KEY: 'a'.repeat(64),
-    LEGACY_APP_ORIGINS: 'not a url, https://sudoku.jevplay.games/some/path , http://plain.jevplay.games,javascript:alert(1),,https://typedoku.jevplay.games,https://sudoku.jevplay.games' });
+    LEGACY_APP_ORIGINS: 'not a url, https://old.jevplay.games/some/path , http://plain.jevplay.games,javascript:alert(1),,https://typedoku.jevplay.games,https://sudoku.jevplay.games/' });
+  // The path entry is skipped, not normalised to its origin; a single trailing slash on a bare origin is fine.
   assert.deepEqual(config.origins, ['https://typedoku.jevplay.games', 'https://sudoku.jevplay.games']);
   const env = environment({ APP_ORIGIN: 'https://typedoku.jevplay.games', LEGACY_APP_ORIGINS: '::::,https://sudoku.jevplay.games' });
   const r = await handle(new Request('https://typedoku.jevplay.games/api/health'), env, context());
   assert.equal(r.status, 200);
+});
+test('decision D9: only bare legacy origins are admitted; userinfo, fragment, path, query and wildcard entries never widen the allowlist', async () => {
+  const { handle } = await import('../server/worker.js'); const { environment, context } = await import('./helpers.js');
+  const hostile = ['https://user:pw@evil.example', 'https://evil.example#@sudoku.jevplay.games', 'https://evil.example/path', 'https://evil.example?q=1', 'https://*.jevplay.games',
+    'https://evil.example?x=@sudoku.jevplay.games', 'https://evil.example/@sudoku.jevplay.games'];
+  const warn = console.warn, warnings = []; console.warn = m => warnings.push(m);
+  let env;
+  try { env = environment({ APP_ORIGIN: 'https://typedoku.jevplay.games', LEGACY_APP_ORIGINS: [...hostile, 'https://sudoku.jevplay.games'].join(','), DISCORD_CLIENT_ID: '1234567890', DISCORD_CLIENT_SECRET: 'secret' }); loadConfig(env); }
+  finally { console.warn = warn; }
+  assert.deepEqual(loadConfig(env).origins, ['https://typedoku.jevplay.games', 'https://sudoku.jevplay.games']);
+  assert.equal(warnings.length, 1, 'one structured warning'); assert.equal(JSON.parse(warnings[0]).count, hostile.length);
+  const send = (url, init = {}) => handle(new Request(url, { ...init, headers: { 'cf-connecting-ip': '198.51.100.9', ...init.headers } }), env, context());
+  // The evil host is not served: OAuth falls back to the canonical callback, and its Origin is refused for CSRF and Activity sign-in.
+  const me = await send('https://evil.example/api/me'), cookie = me.headers.get('set-cookie').split(';')[0], { csrfToken } = await me.json();
+  const login = await send('https://evil.example/api/auth/discord', { headers: { cookie } });
+  assert.equal(new URL(login.headers.get('location')).searchParams.get('redirect_uri'), 'https://typedoku.jevplay.games/api/auth/discord/callback');
+  const post = await send('https://evil.example/api/matches', { method: 'POST', headers: { cookie, origin: 'https://evil.example', 'x-csrf-token': csrfToken, 'content-type': 'application/json' }, body: JSON.stringify({ requestId: 'd9-evil-0001', mode: 'practice' }) });
+  assert.equal(post.status, 403); assert.equal((await post.json()).error, 'csrf_rejected');
+  const activity = await send('https://typedoku.jevplay.games/api/activity/session', { method: 'POST', headers: { origin: 'https://evil.example', 'content-type': 'application/json' }, body: JSON.stringify({ code: 'x' }) });
+  assert.equal(activity.status, 403); assert.equal((await activity.json()).error, 'origin_rejected');
+  // The canonical and the real legacy host are still served.
+  for (const host of ['https://typedoku.jevplay.games', 'https://sudoku.jevplay.games']) {
+    const m = await send(host + '/api/me'), c = m.headers.get('set-cookie').split(';')[0], { csrfToken: t } = await m.json();
+    const ok = await send(host + '/api/matches', { method: 'POST', headers: { cookie: c, origin: host, 'x-csrf-token': t, 'content-type': 'application/json' }, body: JSON.stringify({ requestId: `d9-${host.length}-ok01`, mode: 'practice' }) });
+    assert.equal(ok.status, 201, host);
+  }
 });

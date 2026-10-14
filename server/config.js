@@ -7,6 +7,13 @@ export function loadConfig(env) {
   if (env && typeof env === 'object') cache.set(env, config);
   return config;
 }
+// Plain http is accepted only outside production, as for APP_ORIGIN (local development).
+function legacyOriginOf(entry, production) {
+  if (/[@?#*]/.test(entry)) return null;
+  let u; try { u = new URL(entry); } catch { return null; }
+  if (u.protocol !== 'https:' && (production || u.protocol !== 'http:')) return null;
+  return entry.replace(/\/$/, '') === u.origin ? u.origin : null;
+}
 function buildConfig(env) {
   const int = (key, def, min = 0, max = 1e9) => { const n = env[key] === undefined || env[key] === '' ? def : Number(env[key]); if (!Number.isInteger(n) || n < min || n > max) throw new Error(`Invalid ${key}`); return n; };
   const price = key => { if (!env[key]) return null; const n = Number(env[key]); if (!Number.isFinite(n) || n < 0) throw new Error(`Invalid ${key}`); return n; };
@@ -17,10 +24,14 @@ function buildConfig(env) {
   if (production && !origin.startsWith('https://')) throw new Error('APP_ORIGIN must use HTTPS in production');
   if (production && (!env.LAUNCH_SIGNING_KEY || env.LAUNCH_SIGNING_KEY.length < 32)) throw new Error('Set a random LAUNCH_SIGNING_KEY of at least 32 characters');
   // Hostnames still served during a rename (comma-separated origins). The canonical APP_ORIGIN is the one new links use.
-  // A malformed entry, or a plain-http one in production, is skipped rather than failing every request: the canonical origin still works.
-  const parsedOrigin = x => { try { const u = new URL(x); return /^https?:$/.test(u.protocol) && u.host ? u.origin : null; } catch { return null; } };
-  const legacyOrigins = [...new Set(String(env.LEGACY_APP_ORIGINS || '').split(',').map(x => parsedOrigin(x.trim())))]
-    .filter(x => x && x !== origin && (!production || x.startsWith('https://')));
+  // Decision D9: an entry is admitted only if it is a bare origin. Anything with userinfo, a path, query, fragment or wildcard is
+  // skipped (never normalised: 'https://evil.example#@old-host' must not admit evil.example), warned about once, and never throws.
+  const skipped = [], legacyOrigins = [];
+  for (const entry of String(env.LEGACY_APP_ORIGINS || '').split(',').map(x => x.trim()).filter(Boolean)) {
+    const bare = legacyOriginOf(entry, production);
+    if (!bare) skipped.push(entry); else if (bare !== origin && !legacyOrigins.includes(bare)) legacyOrigins.push(bare);
+  }
+  if (skipped.length) console.warn(JSON.stringify({ type: 'legacy_origins_skipped', count: skipped.length, entries: skipped.map(x => x.slice(0, 200)) }));
   const discordClientId = env.DISCORD_CLIENT_ID || '';
   return {
     production, origin, origins: [origin, ...legacyOrigins], activityOrigin: /^\d{5,25}$/.test(discordClientId) ? `https://${discordClientId}.discordsays.com` : null,

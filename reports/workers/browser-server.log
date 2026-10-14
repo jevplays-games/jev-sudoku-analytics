@@ -1,1 +1,1 @@
-{"event":"server_started","origin":"http://127.0.0.1:64871","bind":"127.0.0.1","port":64871,"opponent":"local_heuristic","discordConfigured":false,"runtime":"local-node-d1-shim"}
+{"event":"server_started","origin":"http://127.0.0.1:50228","bind":"127.0.0.1","port":50228,"opponent":"local_heuristic","discordConfigured":false,"runtime":"local-node-d1-shim"}

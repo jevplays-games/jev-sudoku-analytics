@@ -25,6 +25,21 @@ test('a launch token issued before the Typedoku rename (aud jev-arcade, game sud
   await assert.rejects(verifyLaunch(await signLaunch({ ...payload, game: 'sudoku' }, config.launchKey), config.launchKey, now), /audience/);
   await assert.rejects(verifyLaunch(await signLaunch(legacy, config.launchKey), config.launchKey, now + 600001), /expired/);
 });
+test('a launch token issued by main@b46cbf4 (pre-rename /jev sudoku) still verifies and redeems after the rename', async () => {
+  // fixtures/pre-rename-launch.json was produced by main's own handleInteraction with a fixed, test-only key and clock.
+  const { readFileSync } = await import('node:fs');
+  const f = JSON.parse(readFileSync(new URL('../fixtures/pre-rename-launch.json', import.meta.url), 'utf8'));
+  const p = await verifyLaunch(f.token, f.launchKey, f.issuedAt + 60000);
+  assert.equal(p.aud, 'jev-arcade'); assert.equal(p.game, 'sudoku'); assert.equal(p.sub, '9876543210');
+  await assert.rejects(verifyLaunch(f.token, f.launchKey, f.issuedAt + 600001), /expired/);
+  await assert.rejects(verifyLaunch(f.token, 'b'.repeat(64), f.issuedAt + 60000), /signature/);
+  // Redemption: main stored the token row by jti; here the row is recreated as main's handler wrote it, then consumed once.
+  const env = environment(); env.clock.set(f.issuedAt + 60000);
+  const s = await userSession(env, p.sub);
+  await env.DB.prepare("INSERT INTO security_tokens(hash,kind,user_id,payload_json,expires_at) VALUES(?,?,?,?,?)").bind(await hash(p.jti), 'launch', p.sub, JSON.stringify(p), p.exp).run();
+  const context = await redeemContext(env, { ...config, launchKey: f.launchKey }, s, f.token);
+  assert.equal(context.guildId, p.guild_id); assert.equal(context.channelId, p.channel_id);
+});
 test('launch signature is byte-compatible with the container-era format (base64url body, HMAC-SHA256)', async () => {
   const body = Buffer.from(JSON.stringify(payload)).toString('base64url');
   assert.equal(await signLaunch(payload, config.launchKey), `${body}.${createHmac('sha256', config.launchKey).update(body).digest('base64url')}`);
