@@ -1,17 +1,18 @@
-import { hash,token,httpError,prepareSession,sessionCookie,verifyLaunch,signLaunch,verifyDiscord } from './security.js';
+import { hash,token,httpError,prepareSession,sessionCookie,verifyLaunch,signLaunch,verifyDiscord,LAUNCH_AUDIENCE } from './security.js';
 import { one,run,stmt,batch,isConstraint } from './db.js';
 import { operation } from './telemetry.js';
 import { now,readBody,text } from './util.js';
 const discordBase='https://discord.com/api/v10';
-export async function startOAuth(env,config,session) {
+export const SUBCOMMANDS=['typedoku','sudoku'];
+export async function startOAuth(env,config,session,origin=config.origin) {
   if(!config.discordClientId||!config.discordClientSecret)throw httpError(503,'discord_not_configured');
   const state=token();
   await run(env,'INSERT INTO security_tokens(hash,kind,session_hash,payload_json,expires_at) VALUES(?,?,?,?,?)',await hash(state),'oauth',session.hash,'{}',now(env)+600000);
   const url=new URL('https://discord.com/oauth2/authorize');
-  url.search=new URLSearchParams({client_id:config.discordClientId,response_type:'code',redirect_uri:`${config.origin}/api/auth/discord/callback`,scope:'identify',state}).toString();
+  url.search=new URLSearchParams({client_id:config.discordClientId,response_type:'code',redirect_uri:`${origin}/api/auth/discord/callback`,scope:'identify',state}).toString();
   await operation(env,'oauth_started',{});return url.toString();
 }
-export async function finishOAuth(env,config,session,params,fetchImpl=(...a)=>fetch(...a)) {
+export async function finishOAuth(env,config,session,params,fetchImpl=(...a)=>fetch(...a),origin=config.origin) {
   const state=params.get('state'),code=params.get('code');
   if(!session||!state||state.length>100)throw httpError(403,'oauth_state_rejected');
   // Consuming the state is one conditional UPDATE: it succeeds for exactly one caller, only for the issuing session, only once, only unexpired.
@@ -19,7 +20,7 @@ export async function finishOAuth(env,config,session,params,fetchImpl=(...a)=>fe
   if(!consumed)throw httpError(403,'oauth_state_rejected');
   if(params.has('error'))throw httpError(400,'oauth_declined');
   if(!code||code.length>4096)throw httpError(400,'oauth_code_missing');
-  const {user}=await discordIdentity(config,code,`${config.origin}/api/auth/discord/callback`,fetchImpl);
+  const {user}=await discordIdentity(config,code,`${origin}/api/auth/discord/callback`,fetchImpl);
   const issued=await prepareSession(env,{userId:user.id,consent:session.telemetry_consent});
   await batch(env,[upsertUser(env,user),issued.insert,
     // Preserve ownership of guest games without converting their original identity or eligibility.
@@ -52,7 +53,7 @@ export function activityConfig(config) {
 // Discord Activity sign-in: an SDK authorization code becomes a bearer session. The raw token is returned once and only its hash is stored.
 export async function activitySession(env,config,origin,code,fetchImpl=(...a)=>fetch(...a)) {
   if(!config.discordClientId||!config.discordClientSecret)throw httpError(503,'discord_not_configured');
-  if(!origin||(origin!==config.origin&&origin!==config.activityOrigin))throw httpError(403,'origin_rejected');
+  if(!origin||(!(config.origins??[config.origin]).includes(origin)&&origin!==config.activityOrigin))throw httpError(403,'origin_rejected');
   if(typeof code!=='string'||!code||code.length>4096)throw httpError(400,'oauth_code_missing');
   const {user,accessToken}=await discordIdentity(config,code,null,fetchImpl);
   const issued=await prepareSession(env,{userId:user.id,ttlMs:86400000});
@@ -75,11 +76,12 @@ export async function handleInteraction(env,config,request,raw) {
   if(!await verifyDiscord(raw,request.headers.get('x-signature-timestamp'),request.headers.get('x-signature-ed25519'),config.discordPublicKey,now(env)))throw httpError(401,'discord_signature_rejected');
   let input;try{input=JSON.parse(text(raw));}catch{throw httpError(400,'invalid_json');}
   if(input.type===1)return {type:1};
-  if(input.type!==2||input.data?.name!=='jev'||input.data?.options?.[0]?.name!=='sudoku')throw httpError(400,'unsupported_command');
+  // `/jev typedoku` is the registered subcommand; `/jev sudoku` is still accepted because Discord clients cache the old registration.
+  if(input.type!==2||input.data?.name!=='jev'||!SUBCOMMANDS.includes(input.data?.options?.[0]?.name))throw httpError(400,'unsupported_command');
   if(input.application_id!==config.discordClientId)throw httpError(403,'wrong_application');
   const userId=input.member?.user?.id,guild=input.guild_id,channel=input.channel_id||input.channel?.id;
-  if(![userId,guild,channel].every(s=>typeof s==='string'&&/^\d{5,25}$/.test(s)))return {type:4,data:{flags:64,content:'Run /jev sudoku inside a participating server channel.'}};
-  const at=now(env),jti=token(),payload={v:1,aud:'jev-arcade',sub:userId,guild_id:guild,channel_id:channel,game:'sudoku',iat:at,exp:at+600000,jti};
+  if(![userId,guild,channel].every(s=>typeof s==='string'&&/^\d{5,25}$/.test(s)))return {type:4,data:{flags:64,content:'Run /jev typedoku inside a participating server channel.'}};
+  const at=now(env),jti=token(),payload={v:1,...LAUNCH_AUDIENCE,sub:userId,guild_id:guild,channel_id:channel,iat:at,exp:at+600000,jti};
   if(typeof input.id!=='string')throw httpError(409,'interaction_replayed');
   try{
     // The interaction id is the primary key of a token row, so a replay fails atomically instead of racing a read-then-write.
@@ -90,6 +92,6 @@ export async function handleInteraction(env,config,request,raw) {
   // Fragment never reaches HTTP access logs; browser redeems using a POST body.
   const url=`${config.origin}/#launch=${encodeURIComponent(launch)}`;
   await operation(env,'discord_launch_issued',{});
-  return {type:4,data:{flags:64,content:'Race JEV on the same Sudoku puzzle. This personal link expires in 10 minutes.',components:[{type:1,components:[{type:2,style:5,label:'Play Sudoku vs JEV',url}]}]}};
+  return {type:4,data:{flags:64,content:'Race Jev on the same Sudoku puzzle in Typedoku. This personal link expires in 10 minutes.',components:[{type:1,components:[{type:2,style:5,label:'Play Typedoku vs Jev',url}]}]}};
 }
 export { sessionCookie,readBody };

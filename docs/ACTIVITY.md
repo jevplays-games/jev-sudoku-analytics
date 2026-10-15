@@ -1,7 +1,7 @@
 # Discord Activity mode
 
 Discord can launch this game as an Activity: it loads the game in an iframe on
-`https://<DISCORD_CLIENT_ID>.discordsays.com`, which Discord proxies to the Worker at `sudoku.jevplay.games`.
+`https://<DISCORD_CLIENT_ID>.discordsays.com`, which Discord proxies to the Worker at `typedoku.jevplay.games`.
 Nothing changes for the normal browser flow; Activity behaviour is only enabled when the page
 URL carries Discord's `frame_id` query parameter.
 
@@ -26,14 +26,14 @@ URL carries Discord's `frame_id` query parameter.
    response, remain `DENY` / `frame-ancestors 'none'`.
 
 `GET /api/activity/config` returns the public client id. Session creation is rate limited per remote
-address (300/hour, kept in D1 so every isolate shares it; the address is Cloudflare's `cf-connecting-ip`). The signed `LAUNCH_SIGNING_KEY` flow for `/jev sudoku` is untouched.
+address (300/hour, kept in D1 so every isolate shares it; the address is Cloudflare's `cf-connecting-ip`). The signed `LAUNCH_SIGNING_KEY` flow for `/jev typedoku` is untouched.
 
 ## Discord developer portal
 
 - Enable **Activities** for the application.
-- URL Mappings: prefix `/` -> target `sudoku.jevplay.games` (no scheme).
+- URL Mappings: prefix `/` -> target `typedoku.jevplay.games` (no scheme).
 - Discord creates a primary **Entry Point** command when Activities are enabled. `npm run discord:register`
-  registers `/jev sudoku` with a single POST (create/update by name), so it does not remove the Entry Point.
+  registers `/jev typedoku` with a single POST (create/update by name), so it does not remove the Entry Point.
   If it is ever changed to a bulk overwrite, the Entry Point command must be included or it will be deleted.
 
 No new environment variables are needed.

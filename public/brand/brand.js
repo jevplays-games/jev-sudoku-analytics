@@ -1,4 +1,4 @@
-/* JEV Arcade shared header behaviour. Zero dependencies, no build step.
+/* jevplay.games shared header behaviour. Zero dependencies, no build step.
    Wires the overflow sheet: open/close, scrim, Escape, focus return, and a
    focus trap while open. Games import this once; everything else is CSS. */
 

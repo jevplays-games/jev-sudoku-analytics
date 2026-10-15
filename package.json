@@ -1,9 +1,10 @@
 {
-  "name": "jev-sudoku-arcade",
+  "name": "jev-typedoku",
   "version": "1.0.0",
   "private": true,
+  "license": "MIT",
   "type": "module",
-  "description": "Independent-board Sudoku races with structured JEV decisions and auditable analytics, on Cloudflare Workers + D1.",
+  "description": "Typedoku: independent-board Sudoku races against Jev's structured decisions, with auditable analytics, on Cloudflare Workers + D1.",
   "engines": {
     "node": ">=22.16.0"
   },

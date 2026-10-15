@@ -1,5 +1,5 @@
 // Analytics exports from a local database (npm start / tests). For the Cloudflare database, call the operator endpoint instead:
-//   curl -H "Authorization: Bearer $ADMIN_ANALYTICS_TOKEN" https://sudoku.jevplay.games/api/analytics/operator?days=30
+//   curl -H "Authorization: Bearer $ADMIN_ANALYTICS_TOKEN" https://typedoku.jevplay.games/api/analytics/operator?days=30
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { openDatabase } from '../local/database.js';

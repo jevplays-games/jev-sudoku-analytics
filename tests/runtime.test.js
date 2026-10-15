@@ -27,15 +27,17 @@ test('server and shared code use Web APIs only: no Node built-ins, no process, B
 });
 test('wrangler.jsonc matches the free-plan constraints and the sibling deployment shape', () => {
   const w = jsonc(read('wrangler.jsonc'));
-  assert.equal(w.name, 'jev-sudoku'); assert.equal(w.main, 'server/worker.js');
-  assert.deepEqual(w.routes, [{ pattern: 'sudoku.jevplay.games', custom_domain: true }]);
+  assert.equal(w.name, 'jev-typedoku'); assert.equal(w.main, 'server/worker.js');
+  // The pre-rename host stays routed to this Worker until the 301 redirect replaces it.
+  assert.deepEqual(w.routes, [{ pattern: 'typedoku.jevplay.games', custom_domain: true }, { pattern: 'sudoku.jevplay.games', custom_domain: true }]);
   assert.deepEqual(w.assets, { directory: './public', binding: 'ASSETS', run_worker_first: ['/api/*', '/'] });
-  assert.equal(w.d1_databases[0].binding, 'DB'); assert.equal(w.d1_databases[0].database_id, 'REPLACE_WITH_D1_ID'); assert.equal(w.d1_databases[0].migrations_dir, 'migrations');
+  assert.equal(w.d1_databases[0].binding, 'DB'); assert.match(w.d1_databases[0].database_id, /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
+  assert.equal(w.d1_databases[0].database_name, 'jev-sudoku', 'D1 cannot be renamed in place; the owner kept the existing database'); assert.equal(w.d1_databases[0].migrations_dir, 'migrations');
   assert.equal(w.triggers, undefined, 'no cron triggers: the account-wide free-plan limit is fully used');
   assert.equal(w.limits, undefined, 'no custom CPU limit on the free plan');
   assert.equal(w.durable_objects, undefined); assert.equal(w.containers, undefined);
   assert.ok(!w.compatibility_flags || w.compatibility_flags.every(f => f === 'nodejs_compat'), 'only nodejs_compat may be enabled');
-  assert.equal(w.vars.APP_ORIGIN, 'https://sudoku.jevplay.games'); assert.equal(w.vars.JEV_MODEL, 'jev-1.13.0');
+  assert.equal(w.vars.APP_ORIGIN, 'https://typedoku.jevplay.games'); assert.equal(w.vars.LEGACY_APP_ORIGINS, 'https://sudoku.jevplay.games'); assert.equal(w.vars.JEV_MODEL, 'jev-1.13.0');
   for (const secret of ['TYPESAFE_API_KEY', 'LAUNCH_SIGNING_KEY', 'DISCORD_CLIENT_SECRET', 'ADMIN_ANALYTICS_TOKEN']) assert.equal(secret in w.vars, false, `${secret} must be a secret, not a var`);
 });
 test('the D1-compatible shim keeps D1 semantics: null misses, RETURNING, change counts and atomic batches', async () => {
@@ -51,7 +53,7 @@ test('the D1-compatible shim keeps D1 semantics: null misses, RETURNING, change 
   db.close();
 });
 test('migrations are applied once, in order, to a file database and seed the practice pool', async () => {
-  const dir = mkdtempSync(join(tmpdir(), 'jev-sudoku-db-')), path = join(dir, 'x.sqlite');
+  const dir = mkdtempSync(join(tmpdir(), 'typedoku-db-')), path = join(dir, 'x.sqlite');
   try {
     let db = openDatabase(path); const first = (await db.prepare('SELECT name FROM d1_migrations ORDER BY name').all()).results.map(r => r.name); db.close();
     db = openDatabase(path); const again = (await db.prepare('SELECT name FROM d1_migrations ORDER BY name').all()).results.map(r => r.name);
@@ -60,7 +62,7 @@ test('migrations are applied once, in order, to a file database and seed the pra
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
 test('a database file from the earlier container build is refused instead of being silently mixed with the new schema', () => {
-  const dir = mkdtempSync(join(tmpdir(), 'jev-sudoku-legacy-')), path = join(dir, 'legacy.sqlite');
+  const dir = mkdtempSync(join(tmpdir(), 'typedoku-legacy-')), path = join(dir, 'legacy.sqlite');
   try {
     const legacy = new DatabaseSync(path); legacy.exec('CREATE TABLE matches(id TEXT PRIMARY KEY, state_json TEXT)'); legacy.close();
     assert.throws(() => openDatabase(path), /earlier container build/);
@@ -107,7 +109,7 @@ test('the local adapter serves the same Worker over real HTTP, with a path guard
   await new Promise(r => app.server.listen(0, '127.0.0.1', r));
   const base = `http://127.0.0.1:${app.server.address().port}`;
   try {
-    const page = await fetch(base + '/'); assert.equal(page.status, 200); assert.match(await page.text(), /Sudoku Duel/);
+    const page = await fetch(base + '/'); assert.equal(page.status, 200); assert.match(await page.text(), /<title>Typedoku · jevplay\.games<\/title>/);
     for (const bad of ['/..%2f..%2fpackage.json', '/..%5c..%5cpackage.json', '/%2e%2e/package.json']) assert.equal((await fetch(base + bad)).status, 404, bad);
     assert.equal((await fetch(base + '/api/health')).status, 200);
     const me = await fetch(base + '/api/me'); const cookie = me.headers.getSetCookie()[0].split(';')[0];
@@ -117,6 +119,31 @@ test('the local adapter serves the same Worker over real HTTP, with a path guard
     assert.equal((await create('http://evil.example')).status, 403, 'a foreign origin is refused');
     const created = await create('http://127.0.0.1:0'); assert.equal(created.status, 201, 'the configured origin is accepted end to end');
     assert.equal((await created.json()).givens, null);
+  } finally { await app.close(); }
+});
+test('behind the Train tunnel the local adapter serves both hostnames and keeps each request on the host it was sent to', async () => {
+  const { request } = await import('node:http');
+  const app = createLocalApp({ APP_ORIGIN: 'https://typedoku.jevplay.games', LEGACY_APP_ORIGINS: 'https://sudoku.jevplay.games', PORT: '0', LAUNCH_SIGNING_KEY: 'a'.repeat(64),
+    DISCORD_CLIENT_ID: '1234567890', DISCORD_CLIENT_SECRET: 'secret' }, { databasePath: ':memory:' });
+  await new Promise(r => app.server.listen(0, '127.0.0.1', r));
+  // fetch() cannot set Host, which is exactly what cloudflared forwards, so use node:http.
+  const send = (path, headers, body) => new Promise((resolve, reject) => {
+    const req = request({ host: '127.0.0.1', port: app.server.address().port, path, method: body ? 'POST' : 'GET', headers: { ...headers, ...(body ? { 'content-type': 'application/json' } : {}) } }, res => {
+      let data = ''; res.setEncoding('utf8'); res.on('data', c => { data += c; }); res.on('end', () => resolve({ status: res.statusCode, headers: res.headers, body: data }));
+    });
+    req.on('error', reject); req.end(body ? JSON.stringify(body) : undefined);
+  });
+  try {
+    for (const [host, other] of [['typedoku.jevplay.games', 'sudoku.jevplay.games'], ['sudoku.jevplay.games', 'typedoku.jevplay.games']]) {
+      const me = await send('/api/me', { host }), cookie = me.headers['set-cookie'][0].split(';')[0], { csrfToken } = JSON.parse(me.body);
+      const create = (origin, n) => send('/api/matches', { host, cookie, origin, 'x-csrf-token': csrfToken }, { requestId: `tunnel-${host.length}-${n}` });
+      assert.equal((await create(`https://${other}`, 1)).status, 403, `${host} refuses a page from ${other}`);
+      assert.equal((await create(`https://${host}`, 2)).status, 201, `${host} accepts its own origin`);
+      const login = await send('/api/auth/discord', { host, cookie });
+      assert.equal(new URL(login.headers.location).searchParams.get('redirect_uri'), `https://${host}/api/auth/discord/callback`);
+    }
+    const unknown = await send('/api/auth/discord', { host: 'evil.example' });
+    assert.equal(new URL(unknown.headers.location).searchParams.get('redirect_uri'), 'https://typedoku.jevplay.games/api/auth/discord/callback', 'an unknown Host falls back to the canonical origin');
   } finally { await app.close(); }
 });
 test('the Discord interactions endpoint refuses unsigned requests before touching state', async () => {

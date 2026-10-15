@@ -2,6 +2,10 @@ import { hash, hmac, b64url, fromB64url, utf8, text, hexBytes, same, token, http
 import { invariant } from '../public/shared/sudoku.js';
 import { one } from './db.js';
 export { same, token, hash, httpError };
+// New launch tokens carry the jevplay.games audience; tokens issued before the rename (aud 'jev-arcade', game 'sudoku') still verify.
+// They live ten minutes, so the legacy pair can be dropped one deploy after the rename ships.
+export const LAUNCH_AUDIENCE = { aud: 'jevplay.games', game: 'typedoku' };
+const LEGACY_LAUNCH_AUDIENCES = [{ aud: 'jev-arcade', game: 'sudoku' }];
 export async function signLaunch(payload, key) {
   const body = b64url(utf8(JSON.stringify(payload)));
   return `${body}.${b64url(await hmac(key, body))}`;
@@ -11,7 +15,7 @@ export async function verifyLaunch(value, key, at = Date.now()) {
   const [body, sig, extra] = value.split('.'); invariant(!extra && body && sig, 'invalid_launch');
   invariant(same(sig, b64url(await hmac(key, body))), 'invalid_launch_signature');
   let p; try { p = JSON.parse(text(fromB64url(body))); } catch { throw new Error('invalid_launch'); }
-  invariant(p.v === 1 && p.aud === 'jev-arcade' && p.game === 'sudoku', 'invalid_launch_audience');
+  invariant(p.v === 1 && [LAUNCH_AUDIENCE, ...LEGACY_LAUNCH_AUDIENCES].some(a => p.aud === a.aud && p.game === a.game), 'invalid_launch_audience');
   invariant(Number.isSafeInteger(p.exp) && Number.isSafeInteger(p.iat) && p.exp > at && p.iat <= at + 30000 && p.exp - p.iat <= 600000, 'launch_expired');
   invariant([p.sub, p.guild_id, p.channel_id].every(s => typeof s === 'string' && /^\d{5,25}$/.test(s)) && typeof p.jti === 'string', 'invalid_launch_context');
   return p;
@@ -44,7 +48,8 @@ export async function getSession(env, request, at = now(env)) {
   return (await one(env, 'SELECT * FROM sessions WHERE hash=? AND expires_at>?', await hash(raw), at)) || null;
 }
 export function requireCsrf(request, session, origin, activityOrigin = null) {
-  // The Activity origin is honoured only for bearer sessions, never for cookie sessions.
+  // The Activity origin is honoured only for bearer sessions, never for cookie sessions. `origin` is the origin the request was sent
+  // to (see servedOrigin), so a page on one served hostname cannot post to another.
   const requestOrigin = request.headers.get('origin');
   const allowed = requestOrigin === origin || (session?.via === 'bearer' && !!activityOrigin && requestOrigin === activityOrigin);
   if (!session || !allowed || !same(request.headers.get('x-csrf-token'), session.csrf)) throw httpError(403, 'csrf_rejected');

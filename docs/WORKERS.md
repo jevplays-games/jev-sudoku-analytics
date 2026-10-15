@@ -138,7 +138,7 @@ Application CPU per invocation in milliseconds (limit 10). "Cold" is the first c
 | GET /api/analytics/me (100 matches) | 29 | 0.32 | 20.64 | 20.69 | 1.4 | 5 | **no** / yes |
 | GET /api/analytics/operator (500 results, uncached) | 14 | 10.62 | 37.79 | 37.79 | 3.8 | 16 | **no** / yes |
 | GET /api/analytics/operator (cached, 5 min) | 29 | 0.19 | 0.29 | 0.32 | 0.58 | 3 | yes / yes |
-| POST /api/discord/interactions (signed /jev sudoku) | 29 | 0.64 | 0.89 | 0.89 | 2.87 | 4 | yes / yes |
+| POST /api/discord/interactions (signed /jev typedoku) | 29 | 0.64 | 0.89 | 0.89 | 2.87 | 4 | yes / yes |
 | lazy maintenance sweep (forced, 60 stale rows) | 29 | 0.03 | 0.04 | 0.05 | 0.96 | 11 | yes / yes |
 
 Measured 2026-09-30 on Node v24.18.0, win32 x64 AMD Ryzen 9 7950X 16-Core Processor. Methodology and limits are in the report's `method` and `limits` fields.

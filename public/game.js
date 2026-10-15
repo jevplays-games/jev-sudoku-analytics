@@ -10,14 +10,14 @@ let stateReceived=performance.now(),report=null,telemetry=[],focusStart=performa
 let local=null,localEvents=[],localInitial=null,localTimer=null,localStarted=0,replay=null,replayMode=false,reportMatchId=null;
 const storage={get:(key,fallback=null)=>{try{const value=localStorage.getItem(key);return value===null?fallback:JSON.parse(value);}catch{return fallback;}},set:(key,value)=>{try{localStorage.setItem(key,JSON.stringify(value));}catch{}},remove:key=>{try{localStorage.removeItem(key);}catch{}}};
 function notice(text,error=false){$('notice').hidden=!text;$('notice').textContent=text||'';if(error)$('live-announcement').textContent=text;}
-const messages={evidence_too_large:'Full candidate evidence is too large for this view; use the replay download.',discord_not_configured:'Discord sign-in is not configured on this host. Practice remains available.',ranked_requires_jev:'Ranked games require a configured live JEV service.',discord_login_required:'Sign in with Discord to start an official daily attempt.',
+const messages={evidence_too_large:'Full candidate evidence is too large for this view; use the replay download.',discord_not_configured:'Discord sign-in is not configured on this host. Practice remains available.',ranked_requires_jev:'Ranked games require a configured live Jev service.',discord_login_required:'Sign in with Discord to start an official daily attempt.',
  daily_challenge_not_published:'The operator has not published today’s challenge for this difficulty.',official_attempt_already_used:'Your official attempt for this difficulty and UTC day has already been used.',
  local_conflict:'That digit conflicts with a row, column, or box.',immutable_clue:'Starting clues cannot be changed.',no_change:'That cell already has this value.',nothing_to_undo:'There is nothing to undo.',
- stale_human_revision:'The board changed in another tab. Your latest server board has been restored.',fresh_discord_context_required:'Open a fresh personal link from /jev sudoku in the relevant Discord channel.',
+ stale_human_revision:'The board changed in another tab. Your latest server board has been restored.',fresh_discord_context_required:'Open a fresh personal link from /jev typedoku in the relevant Discord channel.',
  csrf_rejected:'Your session changed. Reload the page before making another move.',match_not_running:'This attempt is no longer running.',human_finished:'Your attempt is already complete or expired.',
  opponent_syncing:'The opponent is catching up with the clock. Try that move again in a moment.',new_game_rate_limit:'The practice creation limit has been reached. Continue your current game or retry after the hourly window.',
- launch_wrong_user:'This launch link belongs to another Discord user. Run /jev sudoku yourself.',
- launch_already_used_or_expired:'This personal launch link is expired or already used. Run /jev sudoku again.'};
+ launch_wrong_user:'This launch link belongs to another Discord user. Run /jev typedoku yourself.',
+ launch_already_used_or_expired:'This personal launch link is expired or already used. Run /jev typedoku again.'};
 function friendly(e){return messages[e.message]||e.message?.replaceAll('_',' ')||'The request could not be completed.';}
 let bearer=null,activity=null; // set only inside a Discord Activity, where cookies are not sent
 async function api(path,{method='GET',body}={}){
@@ -57,10 +57,10 @@ function render(){
   for(const [prefix,count]of [['human',h],['jev',j]]){$(`${prefix}-progress`).textContent=`${Math.max(0,count)} / ${empty} cells`;$(`${prefix}-percent`).textContent=empty?`${Math.round(count/empty*100)}%`:'0%';$(`${prefix}-progressbar`).value=empty?count/empty*100:0;}
   $('timer').textContent=time(elapsed());$('phase-label').textContent=replayMode?'REPLAY':p?.phase==='running'?'RACE IN PROGRESS':p?.phase==='settling'?'CHECKING FINISH':p?.phase==='finished'?'DUEL COMPLETE':'READY TO PLAY';
   $('eligibility-label').textContent=p?.eligibility==='ranked'?'Daily ranked':p?.eligibility==='void'?'Void':'Practice';
-  $('puzzle-caption').textContent=p?.givens?`${clueCount} clues · ${p.config.difficulty.toUpperCase()} · ${p.config.puzzleBand||'standard'}`:'Classic 9 × 9 · one correct solution';
-  const opponent=p?.opponent||(me?.capabilities?.jev?'JEV':'Local heuristic');$('opponent-name').textContent=opponent;
-  $('opponent-badge').textContent=opponent==='JEV'?'STRUCTURED AI':'HEURISTIC';
-  $('opponent-subtitle').textContent=p?.jev?.hidden?'Your opponent’s digits stay concealed.':opponent==='JEV'?'Structured decisions. Validated moves.':'Practice opponent · not a live JEV model';
+  $('puzzle-caption').textContent=p?.givens?`${clueCount} clues · ${p.config.difficulty[0].toUpperCase()+p.config.difficulty.slice(1)} · ${p.config.puzzleBand||'standard'}`:'Classic 9 × 9 · one correct solution';
+  const opponent=p?.opponent||(me?.capabilities?.jev?'Jev':'Local heuristic');$('opponent-name').textContent=opponent;
+  $('opponent-badge').textContent=opponent==='Jev'?'STRUCTURED AI':'HEURISTIC';
+  $('opponent-subtitle').textContent=p?.jev?.hidden?'Your opponent’s digits stay concealed.':opponent==='Jev'?'Structured decisions. Validated moves.':'Practice opponent · not a live Jev model';
   $('jev-status').textContent={thinking:'Evaluating candidates',ready:'Decision ready · pacing',finished:'Grid completed',stalled:'No available deduction',readyToPlay:'Awaiting a puzzle'}[p?.jev?.status||'readyToPlay']||'Awaiting a puzzle';
   const d=p?.decision;$('jev-candidates').textContent=fmt(d?.candidateCount,0);$('jev-confidence').textContent=pct(d?.confidence);$('jev-latency').textContent=d?.latencyMs===null||d?.latencyMs===undefined?'—':`${fmt(d.latencyMs,0)} ms`;
   $('jev-technique').textContent=d?.technique?.replaceAll('_',' ')||'—';$('decision-note').textContent=d?.source?`Source: ${d.source.replaceAll('_',' ')}. Confidence is not Sudoku accuracy.`:'Model confidence is not a measure of Sudoku accuracy.';
@@ -77,7 +77,7 @@ function render(){
     $('result-banner').className=`result-banner jv-plaque ${p.eligibility==='void'?'is-draw':p.outcome==='human'?'is-win':p.outcome==='draw'?'is-draw':'is-loss'}`;
     $('result-banner').textContent=`${label}. ${p.human?.finishMs!==null?`Your time: ${time(p.human.finishMs)}. `:''}${p.eligibility==='ranked'?'Server-verified ranked result.':`Unranked ${p.eligibility==='void'?'void':'practice'} result.`}`;
   }else if(p?.jev?.finishMs!==null&&p?.jev?.finishMs!==undefined&&p?.human?.finishMs===null){$('result-banner').hidden=false;$('result-banner').textContent=`${opponent} finished first. Complete your board to record your solve time.`;}
-  if(p?.opponent==='Heuristic fallback')notice('JEV is unavailable. This game is continuing against the heuristic and will not count toward ranked results.');
+  if(p?.opponent==='Heuristic fallback')notice('Jev is unavailable. This game is continuing against the heuristic and will not count toward ranked results.');
 }
 function acceptState(p){if(replayMode)return;if(current&&current.id===p.id&&p.sequence<current.sequence)return;current=p;stateReceived=performance.now();storage.set('jev-current',p.id);if(p.givens)storage.set('jev-practice-copy',{givens:p.givens,human:p.human?.values,difficulty:p.config.difficulty});render();}
 // The Worker keeps no connection open: the game reads authoritative state by polling. Every poll also lets the server apply
@@ -108,7 +108,7 @@ async function startGame(){if(busy)return;if(current&&['running','settling'].inc
     const p=await api('/api/matches',{method:'POST',body:{requestId:uuid(),difficulty,mode:$('mode').value}});current=p;notes=Array(81).fill(0);reportMatchId=p.id;acceptState(p);
     for(const count of [3,2,1]){$('new-game').textContent=String(count);await new Promise(resolve=>setTimeout(resolve,450));}
     acceptState(await api(`/api/matches/${p.id}/start`,{method:'POST',body:{}}));connectStream(p.id);focusCell(current.givens.findIndex(v=>!v));
-    if(!me.capabilities.jev)notice('Live JEV is not configured. This duel uses the local heuristic and is unranked.');
+    if(!me.capabilities.jev)notice('Live Jev is not configured. This duel uses the local heuristic and is unranked.');
   }catch(e){if(e.message.startsWith('active_match_exists:')){await resume(e.message.split(':')[1]);notice('Your existing active attempt has been restored.');}else notice(friendly(e),true);}
   finally{busy=false;$('new-game').disabled=false;$('new-game').replaceChildren(document.createTextNode('Start new duel '),el('span',null,'↗'));render();}
 }
@@ -141,7 +141,7 @@ function download(name,content,type='application/json'){const blob=new Blob([con
 async function exportAll(){let offset=0,first=null;const matches=[];for(;;){const page=await api(`/api/me/export?offset=${offset}`);first||=page;matches.push(...page.matches);if(page.nextOffset===null)break;offset=page.nextOffset;}return {exportVersion:first.exportVersion,generatedAt:first.generatedAt,matches};}
 async function loadLeaderboard(next=false){try{const p=new URLSearchParams({scope:$('leaderboard-scope').value,date:$('leaderboard-date').value,difficulty:$('leaderboard-difficulty').value});if(next&&leaderboardCursor)p.set('cursor',leaderboardCursor);
   const data=await api(`/api/leaderboard?${p}`);leaderboardCursor=data.nextCursor;$('leaderboard-next').hidden=!leaderboardCursor;
-  $('leaderboard-content').replaceChildren(data.entries.length?table(['Rank','Player','Human time','Race winner'],data.entries.map(r=>[r.rank,r.display_name,time(r.seconds*1000),r.winner==='human'?'Human':r.winner==='jev'?'JEV':'Draw'])):el('div','empty-state jv-empty',data.published?'No eligible completions yet.':'No challenge has been published for this date and difficulty.'));
+  $('leaderboard-content').replaceChildren(data.entries.length?table(['Rank','Player','Human time','Race winner'],data.entries.map(r=>[r.rank,r.display_name,time(r.seconds*1000),r.winner==='human'?'Human':r.winner==='jev'?'Jev':'Draw'])):el('div','empty-state jv-empty',data.published?'No eligible completions yet.':'No challenge has been published for this date and difficulty.'));
   }catch(e){$('leaderboard-content').replaceChildren(el('div','empty-state jv-empty',friendly(e)));$('leaderboard-next').hidden=true;}}
 async function loadProfile(){try{const data=await api('/api/analytics/me');renderProfile($('profile-content'),data,id=>{reportMatchId=id;showView('analytics');});}catch(e){$('profile-content').replaceChildren(el('div','empty-state jv-empty',friendly(e)));}}
 function localApply(event){const e={...event,ms:Math.max(local.elapsedMs,Math.floor(performance.now()-localStarted)),sequence:local.sequence+1};local=advanceState(local,e);localEvents.push(e);current={...publicState(local),id:'offline',opponent:'Local heuristic',verified:false};stateReceived=performance.now();render();}
@@ -176,7 +176,7 @@ async function boot(){buildBoards();render();$('leaderboard-date').value=new Dat
     me=await api('/api/me');$('connection-label').textContent='Connected';$('identity-label').textContent=me.user?.display_name||'Guest session';$('login').hidden=!!me.user;$('logout').hidden=!me.user;$('telemetry-consent').checked=me.telemetryConsent;$('operator-section').hidden=!me.admin;
     if(!me.capabilities.discord){$('login').textContent='Discord not configured';$('login').setAttribute('aria-disabled','true');$('login').addEventListener('click',e=>{e.preventDefault();notice(messages.discord_not_configured);});}
     const launch=sessionStorage.getItem('jev-launch');if(launch&&me.user){try{await api('/api/context',{method:'POST',body:{launch}});me=await api('/api/me');notice('Verified Discord channel context attached to this session.');sessionStorage.removeItem('jev-launch');}catch(e){notice(friendly(e));sessionStorage.removeItem('jev-launch');}}
-    else if(launch)notice('This personal Discord launch is ready. Sign in with the account that invoked /jev sudoku.');
+    else if(launch)notice('This personal Discord launch is ready. Sign in with the account that invoked /jev typedoku.');
     const downgrade=storage.get('jev-downgrade-on-connect');if(downgrade){try{await api(`/api/matches/${downgrade}/reveal`,{method:'POST',body:{}});storage.remove('jev-downgrade-on-connect');}catch{}}
     const last=me.activeMatch?.id||storage.get('jev-current');if(last&&last!=='offline'&&last!=='replay'){try{await resume(last);}catch{storage.remove('jev-current');}}
     if(!current)render();
@@ -210,11 +210,11 @@ $('analysis-button').addEventListener('click',()=>{reportMatchId=current?.id;sho
 for(const id of ['rules-button','rules-footer'])$(id).addEventListener('click',()=>{$('rules-dialog').showModal();record('rules_opened');});$('close-rules').addEventListener('click',()=>$('rules-dialog').close());
 $('reveal').addEventListener('click',async()=>{if(!confirm('Reveal the opponent’s answers? This irreversibly makes the official attempt practice.'))return;try{acceptState(await api(`/api/matches/${current.id}/reveal`,{method:'POST',body:{}}));notice('Answers revealed. This attempt is now unranked practice.');}catch(e){notice(friendly(e));}});
 $('load-leaderboard').addEventListener('click',()=>loadLeaderboard(false));$('leaderboard-next').addEventListener('click',()=>loadLeaderboard(true));
-$('export-json').addEventListener('click',async()=>{await loadAnalytics(true);if(report){record('export_requested',{format:'json'});download(`sudoku-analytics-${current?.id||'match'}.json`,JSON.stringify(report,null,2));}});
-$('export-csv').addEventListener('click',async()=>{await loadAnalytics();if(report){record('export_requested',{format:'csv'});download('sudoku-decision-analytics.csv',toCsv(report.jev.decisions,['sequence','ms','source','model','kind','technique','candidates','confidence','entropyBits','topTwoMargin','inferenceMs','preprocessingMs','pacingWaitMs','branchDepth']),'text/csv');}});
+$('export-json').addEventListener('click',async()=>{await loadAnalytics(true);if(report){record('export_requested',{format:'json'});download(`typedoku-analytics-${current?.id||'match'}.json`,JSON.stringify(report,null,2));}});
+$('export-csv').addEventListener('click',async()=>{await loadAnalytics();if(report){record('export_requested',{format:'csv'});download('typedoku-decision-analytics.csv',toCsv(report.jev.decisions,['sequence','ms','source','model','kind','technique','candidates','confidence','entropyBits','topTwoMargin','inferenceMs','preprocessingMs','pacingWaitMs','branchDepth']),'text/csv');}});
 $('telemetry-consent').addEventListener('change',async e=>{try{const data=await api('/api/privacy',{method:'POST',body:{telemetryConsent:e.target.checked}});me.telemetryConsent=data.telemetryConsent;if(!data.telemetryConsent)telemetry=[];}catch(err){e.target.checked=!e.target.checked;notice(friendly(err));}});
 $('logout').addEventListener('click',async()=>{try{await api('/api/logout',{method:'POST',body:{}});location.reload();}catch(e){notice(friendly(e));}});
-$('export-account').addEventListener('click',async()=>{try{download('jev-sudoku-my-data.json',JSON.stringify(await exportAll(),null,2));}catch(e){notice(friendly(e));}});
+$('export-account').addEventListener('click',async()=>{try{download('typedoku-my-data.json',JSON.stringify(await exportAll(),null,2));}catch(e){notice(friendly(e));}});
 $('delete-account').addEventListener('click',async()=>{const confirmation=prompt('This permanently deletes your stored games, results, and optional telemetry. Type DELETE MY DATA to continue.');if(confirmation!=='DELETE MY DATA')return;
   try{await api('/api/me/data',{method:'DELETE',body:{confirm:confirmation}});storage.remove('jev-current');location.reload();}catch(e){notice(friendly(e));}});
 $('operator-load').addEventListener('click',async()=>{try{renderOperator($('operator-content'),await api('/api/analytics/operator?days=30'));}catch(e){notice(friendly(e));}});

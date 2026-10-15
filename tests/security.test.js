@@ -6,7 +6,7 @@ import { issueSession, hash, signLaunch, verifyLaunch, verifyDiscord, requireCsr
 import { startOAuth, finishOAuth, redeemContext, handleInteraction } from '../server/auth.js';
 import { same } from '../server/util.js';
 const now = Date.now(), config = { origin: 'http://localhost:3000', discordClientId: '1234567890', discordClientSecret: 'secret', launchKey: 'a'.repeat(64), production: false };
-const payload = { v: 1, aud: 'jev-arcade', sub: '9876543210', guild_id: '5555555555', channel_id: '6666666666', game: 'sudoku', iat: now, exp: now + 600000, jti: 'one-time-nonce' };
+const payload = { v: 1, aud: 'jevplay.games', game: 'typedoku', sub: '9876543210', guild_id: '5555555555', channel_id: '6666666666', iat: now, exp: now + 600000, jti: 'one-time-nonce' };
 const enc = s => new TextEncoder().encode(s);
 const publicKeyHex = keys => keys.publicKey.export({ type: 'spki', format: 'der' }).subarray(-32).toString('hex');
 const csrfRequest = (origin, token) => new Request('http://localhost:3000/api/x', { method: 'POST', headers: { ...(origin ? { origin } : {}), ...(token ? { 'x-csrf-token': token } : {}) } });
@@ -17,6 +17,28 @@ test('signed launch rejects modification, expiration and wrong audience', async 
   await assert.rejects(verifyLaunch(signed, config.launchKey, now + 600001), /expired/);
   await assert.rejects(verifyLaunch(await signLaunch({ ...payload, aud: 'wrong' }, config.launchKey), config.launchKey, now), /audience/);
   await assert.rejects(verifyLaunch(signed, 'b'.repeat(64), now), /signature/);
+});
+test('a launch token issued before the Typedoku rename (aud jev-arcade, game sudoku) still verifies; mixed pairs do not', async () => {
+  const legacy = { ...payload, aud: 'jev-arcade', game: 'sudoku' };
+  assert.equal((await verifyLaunch(await signLaunch(legacy, config.launchKey), config.launchKey, now)).sub, payload.sub);
+  await assert.rejects(verifyLaunch(await signLaunch({ ...payload, aud: 'jev-arcade' }, config.launchKey), config.launchKey, now), /audience/);
+  await assert.rejects(verifyLaunch(await signLaunch({ ...payload, game: 'sudoku' }, config.launchKey), config.launchKey, now), /audience/);
+  await assert.rejects(verifyLaunch(await signLaunch(legacy, config.launchKey), config.launchKey, now + 600001), /expired/);
+});
+test('a launch token issued by main@b46cbf4 (pre-rename /jev sudoku) still verifies and redeems after the rename', async () => {
+  // fixtures/pre-rename-launch.json was produced by main's own handleInteraction with a fixed, test-only key and clock.
+  const { readFileSync } = await import('node:fs');
+  const f = JSON.parse(readFileSync(new URL('../fixtures/pre-rename-launch.json', import.meta.url), 'utf8'));
+  const p = await verifyLaunch(f.token, f.launchKey, f.issuedAt + 60000);
+  assert.equal(p.aud, 'jev-arcade'); assert.equal(p.game, 'sudoku'); assert.equal(p.sub, '9876543210');
+  await assert.rejects(verifyLaunch(f.token, f.launchKey, f.issuedAt + 600001), /expired/);
+  await assert.rejects(verifyLaunch(f.token, 'b'.repeat(64), f.issuedAt + 60000), /signature/);
+  // Redemption: main stored the token row by jti; here the row is recreated as main's handler wrote it, then consumed once.
+  const env = environment(); env.clock.set(f.issuedAt + 60000);
+  const s = await userSession(env, p.sub);
+  await env.DB.prepare("INSERT INTO security_tokens(hash,kind,user_id,payload_json,expires_at) VALUES(?,?,?,?,?)").bind(await hash(p.jti), 'launch', p.sub, JSON.stringify(p), p.exp).run();
+  const context = await redeemContext(env, { ...config, launchKey: f.launchKey }, s, f.token);
+  assert.equal(context.guildId, p.guild_id); assert.equal(context.channelId, p.channel_id);
 });
 test('launch signature is byte-compatible with the container-era format (base64url body, HMAC-SHA256)', async () => {
   const body = Buffer.from(JSON.stringify(payload)).toString('base64url');
@@ -90,15 +112,27 @@ test('launch redemption is subject-bound, expiring and one-use', async () => {
 });
 test('signed Discord command returns user-bound fragment link and rejects replay', async () => {
   const env = environment(), keys = generateKeyPairSync('ed25519'), cfg = { ...config, discordPublicKey: publicKeyHex(keys) };
-  const input = { id: '123123123123', application_id: config.discordClientId, type: 2, data: { name: 'jev', options: [{ name: 'sudoku', type: 1 }] }, member: { user: { id: payload.sub } }, guild_id: payload.guild_id, channel_id: payload.channel_id };
+  const input = { id: '123123123123', application_id: config.discordClientId, type: 2, data: { name: 'jev', options: [{ name: 'typedoku', type: 1 }] }, member: { user: { id: payload.sub } }, guild_id: payload.guild_id, channel_id: payload.channel_id };
   const raw = enc(JSON.stringify(input)), ts = String(Math.floor(Date.now() / 1000)), sig = sign(null, Buffer.concat([Buffer.from(ts), Buffer.from(raw)]), keys.privateKey).toString('hex');
   const request = () => new Request('http://localhost:3000/api/discord/interactions', { method: 'POST', headers: { 'x-signature-timestamp': ts, 'x-signature-ed25519': sig } });
   const result = await handleInteraction(env, cfg, request(), raw);
   assert.equal(result.data.flags, 64);
   const url = new URL(result.data.components[0].components[0].url); assert.equal(url.search, '');
-  const token = new URLSearchParams(url.hash.slice(1)).get('launch'); assert.equal((await verifyLaunch(token, cfg.launchKey)).sub, payload.sub);
+  const token = new URLSearchParams(url.hash.slice(1)).get('launch'), issued = await verifyLaunch(token, cfg.launchKey);
+  assert.equal(issued.sub, payload.sub); assert.equal(issued.aud, 'jevplay.games'); assert.equal(issued.game, 'typedoku');
   await assert.rejects(handleInteraction(env, cfg, request(), raw), /replayed/);
   await assert.rejects(handleInteraction(env, cfg, request(), enc('{"type":1}')), /signature/);
   const ping = enc('{"type":1}'), pingSig = sign(null, Buffer.concat([Buffer.from(ts), Buffer.from(ping)]), keys.privateKey).toString('hex');
   assert.deepEqual(await handleInteraction(env, cfg, new Request('http://x', { method: 'POST', headers: { 'x-signature-timestamp': ts, 'x-signature-ed25519': pingSig } }), ping), { type: 1 });
+});
+test('the pre-rename /jev sudoku subcommand is still accepted while Discord clients cache it; other subcommands are not', async () => {
+  const env = environment(), keys = generateKeyPairSync('ed25519'), cfg = { ...config, discordPublicKey: publicKeyHex(keys) };
+  const call = async (name, id) => {
+    const raw = enc(JSON.stringify({ id, application_id: config.discordClientId, type: 2, data: { name: 'jev', options: [{ name, type: 1 }] }, member: { user: { id: payload.sub } }, guild_id: payload.guild_id, channel_id: payload.channel_id }));
+    const ts = String(Math.floor(Date.now() / 1000)), sig = sign(null, Buffer.concat([Buffer.from(ts), Buffer.from(raw)]), keys.privateKey).toString('hex');
+    return handleInteraction(env, cfg, new Request('http://localhost:3000/api/discord/interactions', { method: 'POST', headers: { 'x-signature-timestamp': ts, 'x-signature-ed25519': sig } }), raw);
+  };
+  const legacy = await call('sudoku', '321321321321');
+  assert.match(legacy.data.components[0].components[0].url, /#launch=/);
+  await assert.rejects(call('minesweeper', '456456456456'), /unsupported_command/);
 });

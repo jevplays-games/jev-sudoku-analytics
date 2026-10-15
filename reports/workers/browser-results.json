@@ -13,7 +13,7 @@
     "390px mobile layout without horizontal overflow and rules dialog",
     "No uncaught browser JavaScript errors"
   ],
-  "externalServices": "No real Discord or JEV calls. Browser used local heuristic.",
+  "externalServices": "No real Discord or Jev calls. Browser used local heuristic.",
   "browserTransport": "Native browser HTTP (the game polls; there is no event stream)",
   "screenshots": [
     "desktop-game.png",

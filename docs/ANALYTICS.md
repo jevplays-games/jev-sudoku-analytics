@@ -40,20 +40,20 @@ Per-game comparisons should match challenge, difficulty, rules, model, policy, a
 | Field | Definition |
 |---|---|
 | `phase` | Ready, running, settling, or finished. |
-| `outcome` | Human, JEV, draw, or pending. Void games have a neutral terminal outcome internally but are excluded from the competitive record. |
+| `outcome` | Human, Jev, draw, or pending. Void games have a neutral terminal outcome internally but are excluded from the competitive record. |
 | `eligibility` / `ineligibleReason` | Ranked, practice, or void, with the first downgrade/void explanation. |
 | `initialClues` / `initialEmpty` | Fixed clue count and `81 − initialClues`. |
-| `durationMs` | Covered elapsed server time; includes the human's post-JEV completion continuation and finish-bucket settling when applicable. |
+| `durationMs` | Covered elapsed server time; includes the human's post-Jev completion continuation and finish-bucket settling when applicable. |
 | `humanFinishMs` / `jevFinishMs` | Accepted correct completion timestamps; absent completions are `null`. |
 | `humanCompleted` | Whether a valid human completion was recorded. |
 | `completionFraction` | Currently filled editable human cells divided by initial empty cells. Not correctness. |
 | `raceDeltaMs` | Human finish minus opponent finish, only when both exist. Positive means the human finished later. |
 | `humanLeadMs` / `jevLeadMs` / `tiedProgressMs` | Time spent with more, fewer, or equal filled editable cells, integrated over the step timeline through the report's endpoint. |
-| `progressLeadChanges` | Changes between nonzero human-leading and JEV-leading signs; equal-progress plateaus do not themselves add a switch. |
+| `progressLeadChanges` | Changes between nonzero human-leading and Jev-leading signs; equal-progress plateaus do not themselves add a switch. |
 | `maxHumanProgressLead` / `maxJevProgressLead` | Largest filled-cell advantage observed for each side. |
-| `timeline[]` | `{ms,human,jev,lead}` after relevant transitions. Human and JEV are filled editable cell counts; lead is human minus JEV. |
+| `timeline[]` | `{ms,human,jev,lead}` after relevant transitions. Human and Jev are filled editable cell counts; lead is human minus Jev. |
 
-The progress chart is stepped rather than linearly interpolated, because a digit is placed at a discrete time. Clears, undo, and JEV backtracking can reduce apparent progress. No hidden answer key is consulted to color cells as correct/incorrect.
+The progress chart is stepped rather than linearly interpolated, because a digit is placed at a discrete time. Clears, undo, and Jev backtracking can reduce apparent progress. No hidden answer key is consulted to color cells as correct/incorrect.
 
 ## 4. Human solving behavior
 
@@ -78,7 +78,7 @@ The progress chart is stepped rather than linearly interpolated, because a digit
 
 Move intervals include thought, idle time, network transit, and input behavior. They are not direct measures of cognitive processing time. Local browser blocks can prevent a bad action from being sent, so server rejection rate alone is not a full picture of attempted input.
 
-## 5. JEV actions, decisions, and distributions
+## 5. Jev actions, decisions, and distributions
 
 | Field | Definition |
 |---|---|
@@ -98,7 +98,7 @@ Move intervals include thought, idle time, network transit, and input behavior. 
 | `inferenceMs` | Adapter-level selection latency, potentially including retry handling. |
 | `pacingWaitMs` | Time a completed decision waited before application, measured against the scheduled (stamped) application time. |
 
-Model confidence, candidate probability, entropy and margin are **not calibrated probabilities of Sudoku correctness**. Validity comes from deterministic proof regeneration and legal transition checks. The engine supplies permitted deductions, and JEV chooses among them; this evaluates policy selection inside a hybrid solver, not unconstrained neural Sudoku solving.
+Model confidence, candidate probability, entropy and margin are **not calibrated probabilities of Sudoku correctness**. Validity comes from deterministic proof regeneration and legal transition checks. The engine supplies permitted deductions, and Jev chooses among them; this evaluates policy selection inside a hybrid solver, not unconstrained neural Sudoku solving.
 
 ### Decision audit records
 

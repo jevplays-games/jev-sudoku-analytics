@@ -10,6 +10,13 @@ assets are vendored into this repository.
 - Vendored at `public/brand/inter-var.woff2`
 - License text at `public/brand/OFL.txt`
 
+## VT323
+
+- SIL Open Font License 1.1
+- Copyright 2011 The VT323 Project Authors
+- Vendored at `public/brand/vt323.woff2` (copied from the shared jevplay.games brand kit)
+- License text at `public/brand/OFL-VT323.txt`
+
 ## @discord/embedded-app-sdk
 
 - MIT License

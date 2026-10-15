@@ -38,7 +38,9 @@ export function createLocalApp(environment = process.env, { databasePath } = {})
       const headers = new Headers();
       for (const [k, v] of Object.entries(req.headers)) if (v !== undefined && !k.toLowerCase().startsWith('cf-') && !k.toLowerCase().startsWith('x-forwarded-')) headers.set(k, Array.isArray(v) ? v.join(',') : v);
       if (trustProxy) { const hop = String(req.headers['x-forwarded-for'] ?? '').split(',').pop().trim(); if (hop) headers.set('cf-connecting-ip', hop); }
-      const request = new Request(new URL(req.url, config.origin), { method: req.method, headers, ...(!['GET', 'HEAD'].includes(req.method) ? { body: req, duplex: 'half' } : {}) });
+      // Behind the Train tunnel one container serves the canonical and the legacy hostnames; keep whichever one was asked for.
+      const base = config.origins.find(o => new URL(o).host === req.headers.host) ?? config.origin;
+      const request = new Request(new URL(req.url, base), { method: req.method, headers, ...(!['GET', 'HEAD'].includes(req.method) ? { body: req, duplex: 'half' } : {}) });
       const response = await handle(request, env, ctx);
       const out = {}; for (const [k, v] of response.headers) if (k !== 'set-cookie') out[k] = v;
       const cookies = response.headers.getSetCookie?.() ?? []; if (cookies.length) out['set-cookie'] = cookies;
@@ -52,7 +54,7 @@ export function createLocalApp(environment = process.env, { databasePath } = {})
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const app = createLocalApp(), port = Number(process.env.PORT ?? 3000), host = process.env.HOST ?? (app.config.production ? '0.0.0.0' : '127.0.0.1');
   app.server.listen(port, host, () => console.log(JSON.stringify({ event: 'server_started', origin: app.config.origin, bind: host, port: app.server.address().port,
-    opponent: app.config.jevKey ? 'JEV' : 'local_heuristic', discordConfigured: !!app.config.discordClientId, runtime: 'local-node-d1-shim' })));
+    opponent: app.config.jevKey ? 'Jev' : 'local_heuristic', discordConfigured: !!app.config.discordClientId, runtime: 'local-node-d1-shim' })));
   // There is no drain: matches live in the database, and any attempt still running when the process stops is recovered
   // lazily (or voided after ABANDONED_AFTER_MS) exactly as on Cloudflare.
   for (const signal of ['SIGINT', 'SIGTERM']) process.on(signal, () => app.close().then(() => process.exit(0)));

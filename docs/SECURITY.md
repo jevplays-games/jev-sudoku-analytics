@@ -37,7 +37,7 @@
 
 **Provider and policy quality are uncalibrated.** Typed responses and proof checking reduce malformed action risk. They do not prove optimal decisions or fair speed. The pure Sudoku detectors and hybrid policy need broader evaluation before competitive claims. The included test samples are finite, not a formal proof of every advanced detector state.
 
-**No external certification.** Live Discord/JEV credentials, the deployed Cloudflare runtime and its real CPU behavior, public TLS, full browser CSP enforcement on the deployed origin, assistive-technology audits, and adversarial penetration tests were not available/executed during assembly. The supplied tests cover specific contracts, not all security scenarios.
+**No external certification.** Live Discord/Jev credentials, the deployed Cloudflare runtime and its real CPU behavior, public TLS, full browser CSP enforcement on the deployed origin, assistive-technology audits, and adversarial penetration tests were not available/executed during assembly. The supplied tests cover specific contracts, not all security scenarios.
 
 ## Recommended release gate
 

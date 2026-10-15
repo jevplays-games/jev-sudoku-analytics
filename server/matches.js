@@ -8,7 +8,7 @@
 // prepared it while waiting for the pacing delay. Every append is a compare-and-swap on matches.revision.
 import { createMatchState, advanceState, publicState } from '../public/shared/match.js';
 import { getJevCandidates, PROFILES } from '../public/shared/sudoku-ai.js';
-import { REPLAY_VERSION } from '../public/shared/replay.js';
+import { REPLAY_VERSION, REPLAY_FORMAT } from '../public/shared/replay.js';
 import { RULES_VERSION } from '../public/shared/sudoku.js';
 import { analyzeMatch, redactAnalytics } from '../public/shared/analytics.js';
 import { one, all, run, stmt, batch, readMatch, readEvents, readTelemetry, eventBytes, reserve, isConstraint } from './db.js';
@@ -383,7 +383,7 @@ export async function replayJson(env, id, session) {
   if (row.state.phase !== 'finished') throw httpError(409, 'replay_available_after_finish');
   const [result, events] = await Promise.all([one(env, 'SELECT replay_hash FROM results WHERE match_id=?', id), all(env, 'SELECT event_json FROM match_events WHERE match_id=? ORDER BY sequence', id)]);
   const integrity = JSON.stringify({ replayHash: result?.replay_hash, replayHashAlgorithm: REPLAY_HASH_ALGORITHM, authority: 'server-recorded; downloaded copies are not official submissions' });
-  return `{"format":"jev-sudoku-replay","formatVersion":${REPLAY_VERSION},"rulesVersion":${JSON.stringify(RULES_VERSION)},"initial":${row.initial_json},"events":[${events.map(e => e.event_json).join(',')}],"finalState":${row.state_json},"integrity":${integrity}}`;
+  return `{"format":${JSON.stringify(REPLAY_FORMAT)},"formatVersion":${REPLAY_VERSION},"rulesVersion":${JSON.stringify(RULES_VERSION)},"initial":${row.initial_json},"events":[${events.map(e => e.event_json).join(',')}],"finalState":${row.state_json},"integrity":${integrity}}`;
 }
 export const replayFor = async (env, id, session) => JSON.parse(await replayJson(env, id, session));
 /**
@@ -422,6 +422,6 @@ export async function project(env, row, { pending = null } = {}) {
   if (p.jev && pending === 'ready') p.jev.status = 'ready';
   return { id: row.id, challengeId: row.challenge_id, hasCommunity: !!row.guild_id, serverNow: now(env), startedAt: row.started_at,
     ...p, elapsedMs: elapsed(env, row), decision,
-    opponent: !config.jevKey ? 'Local heuristic' : row.state.providerFallback ? 'Heuristic fallback' : 'JEV',
+    opponent: !config.jevKey ? 'Local heuristic' : row.state.providerFallback ? 'Heuristic fallback' : 'Jev',
     verified: row.state.phase === 'finished' ? !!(await one(env, 'SELECT 1 AS x FROM results WHERE match_id=?', row.id)) : false };
 }

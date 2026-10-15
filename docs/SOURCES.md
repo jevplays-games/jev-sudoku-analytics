@@ -1,6 +1,6 @@
 # Source basis and integration references
 
-The project follows the user's supplied **JEV Single-Page Game — Architecture & Implementation Planning Prompt**, preserved in `source-prompt.md`, and the Sudoku-specific plan from the conversation. The user's added requirement was detailed/exhaustive analytics plus an actual ZIP implementation. Added metric formulas, privacy defaults, UI design and concrete code are implementation choices, not claims that the original brief specified every field.
+The project follows the user's supplied **Jev Single-Page Game — Architecture & Implementation Planning Prompt**, preserved in `source-prompt.md`, and the Sudoku-specific plan from the conversation. The user's added requirement was detailed/exhaustive analytics plus an actual ZIP implementation. Added metric formulas, privacy defaults, UI design and concrete code are implementation choices, not claims that the original brief specified every field.
 
 Official documentation consulted for external contracts on **September22,2026** (Cloudflare references added for the Workers deployment; the exact limits figures should be re-checked against the current pages before relying on them):
 

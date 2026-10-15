@@ -1,6 +1,6 @@
 # Deployment (Cloudflare Workers + D1, free plan)
 
-JEV Sudoku runs as one Cloudflare Worker with a D1 database and static assets, served at **https://sudoku.jevplay.games**. It
+Typedoku (formerly Sudoku Duel) runs as one Cloudflare Worker with a D1 database and static assets, served at **https://typedoku.jevplay.games**. It
 needs no server, no container and no paid plan. The earlier Docker/Caddy/systemd and GoDaddy Node deployments were removed
 (they remain in git history); nothing in this document depends on them. The same handler runs locally through `npm start`.
 
@@ -11,14 +11,14 @@ query budgets, what happens to an abandoned match). This page is the operator ch
 
 | Piece | Where |
 |---|---|
-| Worker (`server/worker.js`, `wrangler.jsonc`) | name `jev-sudoku`, custom domain `sudoku.jevplay.games` |
-| Database | D1 `jev-sudoku` (binding `DB`), schema in `migrations/` |
+| Worker (`server/worker.js`, `wrangler.jsonc`) | name `jev-typedoku`, custom domains `typedoku.jevplay.games` (canonical) and `sudoku.jevplay.games` (pre-rename, until its redirect) |
+| Database | D1 `jev-sudoku` (binding `DB`), schema in `migrations/`. The name predates the Typedoku rename and is kept on purpose: D1 cannot be renamed in place, and the owner chose not to recreate and migrate it (2026-10-14). |
 | Static game | `public/` through the `ASSETS` binding; the Worker sees `/api/*` and `/` only (`run_worker_first`) |
 | Crons / Durable Objects / containers | none (the account's five free cron triggers are already used) |
 
 ## One-time setup
 
-Run these from the repository root (`jev-sudoku/`). `npm run deploy` and the `db:*` scripts call `npx wrangler@4.35.0`, so no
+Run these from the repository root. `npm run deploy` and the `db:*` scripts call `npx wrangler@4.35.0`, so no
 install is needed. Log in once with `npx wrangler login`.
 
 1. **Create the database**
@@ -27,7 +27,8 @@ install is needed. Log in once with `npx wrangler login`.
    npx wrangler d1 create jev-sudoku
    ```
 
-   Copy the printed `database_id` over `REPLACE_WITH_D1_ID` in `wrangler.jsonc`.
+   Copy the printed `database_id` into `wrangler.jsonc`. (The production database already exists under this name; skip this step
+   unless you are setting up a fresh account.)
 
 2. **Apply the migrations** (schema plus the 300-puzzle practice pool)
 
@@ -40,7 +41,7 @@ install is needed. Log in once with `npx wrangler login`.
    | Name | Required | Purpose |
    |---|---|---|
    | `LAUNCH_SIGNING_KEY` | yes | 32+ random characters; signs Discord launch links and derives quota keys. Generate with `node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"`. The Worker refuses to serve (503 `configuration_invalid`) without it on a public origin. |
-   | `TYPESAFE_API_KEY` | for live JEV and ranked play | Sent only to `https://api.typesafe.ai/v1/systemone`. Without it the opponent is the labeled local heuristic and every game is practice. |
+   | `TYPESAFE_API_KEY` | for live Jev and ranked play | Sent only to `https://api.typesafe.ai/v1/systemone`. Without it the opponent is the labeled local heuristic and every game is practice. |
    | `DISCORD_CLIENT_SECRET` | for Discord sign-in | OAuth code exchange (also used by Activity sign-in). |
    | `ADMIN_ANALYTICS_TOKEN` | optional | Bearer token for `GET /api/analytics/operator`. |
 
@@ -51,7 +52,7 @@ install is needed. Log in once with `npx wrangler login`.
    `DISCORD_CLIENT_ID`, `DISCORD_PUBLIC_KEY` and `ADMIN_DISCORD_IDS` (comma-separated user IDs) are not secret; set them with
    `wrangler secret put` or add them to `vars` in `wrangler.jsonc`.
 
-   Tunable `vars` already in `wrangler.jsonc`: `APP_ORIGIN`, `JEV_MODEL` (`jev-1.13.0`), `PRACTICE_PACING_MS`,
+   Tunable `vars` already in `wrangler.jsonc`: `APP_ORIGIN`, `LEGACY_APP_ORIGINS`, `JEV_MODEL` (`jev-1.13.0`), `PRACTICE_PACING_MS`,
    `MAX_ACTIVE_MATCHES`, `MAX_JEV_CALLS_PER_DAY`, `JEV_CALLS_PER_HOUR`, `MAX_JEV_REQUESTS_PER_MATCH`, `ABANDONED_AFTER_MS`,
    `TELEMETRY_RETENTION_DAYS`, `OPERATIONS_RETENTION_DAYS`. Optional: `JEV_TIMEOUT_MS`, `MAX_MATCH_EVENTS`,
    `JEV_INPUT_USD_PER_MILLION` / `JEV_OUTPUT_USD_PER_MILLION` (both blank means unknown cost, never zero), `ADMIN_DISCORD_IDS`.
@@ -63,8 +64,14 @@ install is needed. Log in once with `npx wrangler login`.
    npm run deploy
    ```
 
-   The `routes` entry (`custom_domain: true`) creates the DNS record and certificate for `sudoku.jevplay.games` on deploy, provided the
-   `jevplay.games` zone is on the same Cloudflare account. If DNS for the zone is still elsewhere, move it first.
+   The `routes` entries (`custom_domain: true`) create the DNS records and certificates for `typedoku.jevplay.games` and
+   `sudoku.jevplay.games` on deploy, provided the `jevplay.games` zone is on the same Cloudflare account. If DNS for the zone is still
+   elsewhere, move it first.
+
+   **Both hostnames.** `APP_ORIGIN` is the canonical origin (new Discord launch links use it). `LEGACY_APP_ORIGINS` lists origins that are
+   still served, comma-separated. A request keeps the host it arrived on: its CSRF `Origin` must be that host, and Discord sign-in returns
+   to that host (sessions are host-scoped cookies). Once `sudoku.jevplay.games/*` is a 301 to `typedoku.jevplay.games/$1`, remove the
+   legacy route and var.
 
 5. **Publish ranked daily puzzles** (only needed for ranked play). They are secret until played, so they are generated locally and
    loaded with `INSERT OR IGNORE` (never overwriting an existing day). Do not commit the file.
@@ -78,19 +85,23 @@ install is needed. Log in once with `npx wrangler login`.
    calendar: there is no scheduler to publish more.
 
 6. **Discord** (only if you use community features)
-   - Interactions Endpoint URL: `https://sudoku.jevplay.games/api/discord/interactions` (Discord sends a signed ping; the Worker
+   - Interactions Endpoint URL: `https://typedoku.jevplay.games/api/discord/interactions` (Discord sends a signed ping; the Worker
      verifies it with Web Crypto and `DISCORD_PUBLIC_KEY`).
-   - OAuth2 redirect: `https://sudoku.jevplay.games/api/auth/discord/callback`, scope `identify`.
+   - OAuth2 redirects, scope `identify`: `https://typedoku.jevplay.games/api/auth/discord/callback` and, while the old host is served,
+     `https://sudoku.jevplay.games/api/auth/discord/callback`.
    - Register the slash command from your machine with the same variables in `.env`: `npm run discord:register`
      (`DISCORD_TEST_GUILD_ID` limits it to one guild for instant registration).
-   - Activity mode: see [ACTIVITY.md](ACTIVITY.md) (URL mapping `/` to `sudoku.jevplay.games`).
+   - The slash command is `/jev typedoku`. The old `sudoku` subcommand is still accepted because Discord clients cache the old registration, and
+     launch tokens signed before the rename (`aud: 'jev-arcade'`, `game: 'sudoku'`) still verify for their ten minutes. Drop both
+     compat paths (`SUBCOMMANDS` in `server/auth.js`, `LEGACY_LAUNCH_AUDIENCES` in `server/security.js`) one deploy after the rename.
+   - Activity mode: see [ACTIVITY.md](ACTIVITY.md) (URL mapping `/` to `typedoku.jevplay.games`).
    - `LAUNCH_SIGNING_KEY` must not change while launch links are outstanding (they live ten minutes).
 
 7. **Verify**
 
    ```sh
-   curl https://sudoku.jevplay.games/api/health            # {"status":"ok","runtime":"workers"}
-   curl -s -o /dev/null -w "%{http_code}\n" https://sudoku.jevplay.games/api/analytics/operator   # 403
+   curl https://typedoku.jevplay.games/api/health            # {"status":"ok","runtime":"workers"}
+   curl -s -o /dev/null -w "%{http_code}\n" https://typedoku.jevplay.games/api/analytics/operator   # 403
    ```
 
    Then play a practice game in a browser (the page polls once a second while a race runs). For ranked play, do one real game
@@ -103,10 +114,10 @@ install is needed. Log in once with `npx wrangler login`.
 |---|---|
 | Deploy a change | `npm test && npm run deploy` |
 | New migration | add `migrations/0003_name.sql`, then `npm run db:remote` (apply before deploying code that needs it) |
-| Live logs | `npx wrangler tail jev-sudoku` |
+| Live logs | `npx wrangler tail jev-typedoku` |
 | Roll back the Worker | `npx wrangler rollback` (database migrations are not rolled back) |
 | Back up D1 | `npx wrangler d1 export jev-sudoku --remote --output backup.sql` (contains player data; keep it private) |
-| Operator analytics | `curl -H "Authorization: Bearer $ADMIN_ANALYTICS_TOKEN" "https://sudoku.jevplay.games/api/analytics/operator?days=30"` (cached five minutes; add `&fresh=1` to bypass) |
+| Operator analytics | `curl -H "Authorization: Bearer $ADMIN_ANALYTICS_TOKEN" "https://typedoku.jevplay.games/api/analytics/operator?days=30"` (cached five minutes; add `&fresh=1` to bypass) |
 | Inspect a table | `npx wrangler d1 execute jev-sudoku --remote --command "SELECT COUNT(*) FROM matches"` |
 
 Retention and cleanup run **lazily**: a request to a light endpoint occasionally runs one bounded sweep (at most once a minute, gated
@@ -145,6 +156,34 @@ database file written by the old container build is refused with a clear message
 Wrangler's own local mode also works (`npm run db:local`, then `npx wrangler dev`) but is not required.
 
 Local ranked play needs `TYPESAFE_API_KEY`, a Discord application and `npm run puzzles -- --days 3`.
+
+## Train (Cloudflare Tunnel)
+
+The game also runs as a Node container on the Train server behind the `jevplay-games` Cloudflare Tunnel; the compose file and its
+README live in the hub repository (`deploy/train/`). `local/server.js` serves both hostnames there in the same way as the Worker:
+it keeps the `Host` that cloudflared forwards when that host is in `APP_ORIGIN` or `LEGACY_APP_ORIGINS`, and falls back to
+`APP_ORIGIN` otherwise. During the rename the container's env file needs:
+
+```sh
+APP_ORIGIN=https://typedoku.jevplay.games
+LEGACY_APP_ORIGINS=https://sudoku.jevplay.games
+```
+
+and the tunnel's `config.yml` routes both hostnames to the same service (the compose service keeps its name `sudoku`; renaming it
+or its `sudoku-data` volume would orphan the SQLite data):
+
+```yaml
+ingress:
+  - hostname: typedoku.jevplay.games
+    service: http://sudoku:3000
+  - hostname: sudoku.jevplay.games      # pre-rename host; keep until the 301 redirect is live
+    service: http://sudoku:3000
+  # ...the other games' entries, then the catch-all:
+  - service: http_status:404
+```
+
+Add the `typedoku.jevplay.games` public hostname to the tunnel (`cloudflared tunnel route dns jevplay-games typedoku.jevplay.games`)
+before redirecting the old host.
 
 ## Historical note
 

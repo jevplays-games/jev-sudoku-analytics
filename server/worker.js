@@ -1,8 +1,8 @@
-// JEV Sudoku Worker: one handle(request, env, ctx) written against Web APIs only. Cloudflare runs it directly (wrangler.jsonc);
+// Typedoku Worker: one handle(request, env, ctx) written against Web APIs only. Cloudflare runs it directly (wrangler.jsonc);
 // local/server.js adapts Node's http server to it with a node:sqlite-backed D1-compatible `env.DB`. Business logic never branches on
 // the runtime; only `env` differs.
 import './warmup.js';
-import { loadConfig } from './config.js';
+import { loadConfig, servedOrigin } from './config.js';
 import { HttpError, httpError, json, readJson, readBody, same, now } from './util.js';
 import { one, all, run, stmt, batch, readMatch, quota } from './db.js';
 import { getSession, prepareSession, sessionCookie, requireCsrf, RateLimiter } from './security.js';
@@ -81,11 +81,11 @@ async function api(request, env, ctx, url, config) {
   }
   if (path === '/api/auth/discord' && method === 'GET') {
     await ensureSession();
-    return new Response(null, { status: 302, headers: { Location: await startOAuth(env, config, session), 'Cache-Control': 'no-store', ...cookieHeaders } });
+    return new Response(null, { status: 302, headers: { Location: await startOAuth(env, config, session, servedOrigin(config, url)), 'Cache-Control': 'no-store', ...cookieHeaders } });
   }
   if (path === '/api/auth/discord/callback' && method === 'GET') {
     try {
-      const issued = await finishOAuth(env, config, session, url.searchParams, env.FETCH);
+      const issued = await finishOAuth(env, config, session, url.searchParams, env.FETCH, servedOrigin(config, url));
       return new Response(null, { status: 302, headers: { Location: '/#login=success', 'Set-Cookie': sessionCookie(issued.raw, config.production) } });
     } catch (e) { await operation(env, 'oauth_failed', { reason: e.status ? e.message : 'provider_error' }); return new Response(null, { status: 302, headers: { Location: '/#login=failed' } }); }
   }
@@ -104,7 +104,7 @@ async function api(request, env, ctx, url, config) {
     return new Response(body, { status: 200, headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', 'X-Report-Cache': 'miss' } });
   }
   if (!session) throw httpError(401, 'session_required');
-  if (['POST', 'DELETE', 'PATCH'].includes(method)) requireCsrf(request, session, config.origin, config.activityOrigin);
+  if (['POST', 'DELETE', 'PATCH'].includes(method)) requireCsrf(request, session, servedOrigin(config, url), config.activityOrigin);
   if (path === '/api/logout' && method === 'POST') { await run(env, 'DELETE FROM sessions WHERE hash=?', session.hash); return json({ ok: true }, 200, { 'Set-Cookie': sessionCookie('', config.production, 0) }); }
   if (path === '/api/context' && method === 'POST') return json(await redeemContext(env, config, session, (await readJson(request)).launch));
   if (path === '/api/privacy' && method === 'POST') {
@@ -146,13 +146,13 @@ async function api(request, env, ctx, url, config) {
       return json(await humanAction(env, ctx, id, session, await readJson(request)));
     }
     if (action === 'reveal' && method === 'POST') { await readJson(request); return json(await revealMatch(env, id, session)); }
-    if (action === 'replay' && method === 'GET') return new Response(await replayJson(env, id, session), { status: 200, headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', 'Content-Disposition': 'attachment; filename="sudoku-replay.json"' } });
+    if (action === 'replay' && method === 'GET') return new Response(await replayJson(env, id, session), { status: 200, headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', 'Content-Disposition': 'attachment; filename="typedoku-replay.json"' } });
     if (action === 'analytics' && method === 'GET') {
       if (!rate.allow(`analytics:${id}`, 40, 60000)) throw httpError(429, 'analytics_rate_limit');
       // ?evidence=omit drops the per-decision candidate evidence (about a megabyte for a long game) for on-screen use; downloads ask for it all.
       const report = await analytics(env, id, session, { evidence: url.searchParams.get('evidence') !== 'omit' });
       if (url.searchParams.get('format') === 'csv') return new Response(toCsv(report.jev.decisions, ['sequence', 'ms', 'source', 'model', 'kind', 'technique', 'candidates', 'confidence', 'entropyBits', 'topTwoMargin', 'inferenceMs', 'preprocessingMs', 'pacingWaitMs', 'branchDepth']),
-        { status: 200, headers: { 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': 'attachment; filename="sudoku-decisions.csv"', 'Cache-Control': 'no-store' } });
+        { status: 200, headers: { 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': 'attachment; filename="typedoku-decisions.csv"', 'Cache-Control': 'no-store' } });
       return json(report);
     }
     if (action === 'telemetry' && method === 'POST') {
