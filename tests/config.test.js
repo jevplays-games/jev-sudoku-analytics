@@ -48,7 +48,8 @@ test('malformed or insecure LEGACY_APP_ORIGINS entries are skipped instead of br
 test('decision D9: only bare legacy origins are admitted; userinfo, fragment, path, query and wildcard entries never widen the allowlist', async () => {
   const { handle } = await import('../server/worker.js'); const { environment, context } = await import('./helpers.js');
   const hostile = ['https://user:pw@evil.example', 'https://evil.example#@sudoku.jevplay.games', 'https://evil.example/path', 'https://evil.example?q=1', 'https://*.jevplay.games',
-    'https://evil.example?x=@sudoku.jevplay.games', 'https://evil.example/@sudoku.jevplay.games'];
+    'https://evil.example?x=@sudoku.jevplay.games', 'https://evil.example/@sudoku.jevplay.games', 'https://:pw@evil.example', 'https://evil.example?', 'https://evil.example#',
+    'not a url', '::::', 'javascript:alert(1)', '%%%', 'https://'];
   const warn = console.warn, warnings = []; console.warn = m => warnings.push(m);
   let env;
   try { env = environment({ APP_ORIGIN: 'https://typedoku.jevplay.games', LEGACY_APP_ORIGINS: [...hostile, 'https://sudoku.jevplay.games'].join(','), DISCORD_CLIENT_ID: '1234567890', DISCORD_CLIENT_SECRET: 'secret' }); loadConfig(env); }

@@ -208,6 +208,9 @@ def run() -> None:
                 expect(mp.locator('#phase-label')).to_have_text('RACE IN PROGRESS', timeout=15000)
                 overflow = mp.evaluate('document.documentElement.scrollWidth > window.innerWidth')
                 assert not overflow, 'Mobile page overflows horizontally'
+                # Capture from the top: a full-page shot taken while scrolled paints the sticky header and the sticky
+                # opponent heading mid-page.
+                mp.evaluate('window.scrollTo(0, 0)')
                 mp.screenshot(path=str(REPORTS/'mobile-game.png'), full_page=True)
                 mp.locator('#rules-footer').click()
                 expect(mp.locator('#rules-dialog')).to_be_visible()

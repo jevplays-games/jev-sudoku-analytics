@@ -186,3 +186,20 @@ test('request bodies are bounded and must be JSON objects', async () => {
   const r = await handle(new Request('http://localhost:3000/api/matches', { method: 'POST', headers: { origin: env.APP_ORIGIN, 'x-csrf-token': x.jar.csrf, cookie: x.jar.cookie, 'content-type': 'text/plain' }, body: '{}' }), env, context());
   assert.equal(r.status, 415);
 });
+test('My stats history never names Jev as the opponent of a local-heuristic game, and labels a model-backed loss as Jev', async () => {
+  const { historyOutcome } = await import('../public/analytics-ui.js');
+  // No TYPESAFE_API_KEY: the local heuristic plays. A forfeit records the opponent as the winner (outcome token 'jev').
+  const env = environment({ PRACTICE_PACING_MS: '1000' }), x = await client(env), p = (await x.create({ difficulty: 'jev' })).body;
+  await x.start(p.id); await x.ctx.settle(); env.clock.advance(10); assert.equal((await x.act(p.id, 0, { kind: 'forfeit' })).status, 200);
+  const row = (await x.json('/api/analytics/me')).body.history.find(g => g.id === p.id);
+  assert.equal(row.outcome, 'jev', 'the stored token is unchanged'); assert.equal(row.opponent, 'Local heuristic');
+  const shown = historyOutcome(row);
+  assert.equal(shown, 'Local heuristic won'); assert.doesNotMatch(shown, /jev/i);
+  // Rows from an older server without the field fall back to neutral wording, never the raw token.
+  assert.equal(historyOutcome({ ...row, opponent: undefined }), 'Opponent won');
+  assert.equal(historyOutcome({ phase: 'finished', eligibility: 'practice', outcome: 'human' }), 'You won');
+  assert.equal(historyOutcome({ phase: 'finished', eligibility: 'void', outcome: 'draw' }), 'Voided');
+  assert.equal(historyOutcome({ phase: 'running' }), 'running');
+  const { opponentLabel } = await import('../server/reports.js');
+  assert.equal(opponentLabel(null), 'Jev'); assert.equal(opponentLabel('provider_fallback'), 'Heuristic fallback'); assert.equal(opponentLabel('local_opponent'), 'Local heuristic');
+});

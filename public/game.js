@@ -28,9 +28,20 @@ async function api(path,{method='GET',body}={}){
 function record(name,properties={}){if(!me?.telemetryConsent||local||!current?.id)return;if(telemetry.length<200)telemetry.push({id:uuid(),name,properties});}
 async function flushTelemetry(){if(!telemetry.length||!current?.id||local)return;const batch=telemetry.splice(0,50);try{await api(`/api/matches/${current.id}/telemetry`,{method:'POST',body:{events:batch}});}catch{/* Optional observations never block play or retry forever. */}}
 function saveNotes(){if(current?.id)storage.set(`jev-notes:${current.id}`,notes);}
+// Keyboard focus must never sit under a sticky or fixed overlay (WCAG 2.4.11): the header, the phone-sized sticky opponent
+// heading, and the notice / result banner that are pinned to the bottom on short screens. Scroll the window just enough to keep
+// the element 8px clear of every overlay that covers its column. Explicit, because browsers treat an element under a sticky
+// header as already in view, and scroll-margin on a cell inside the board does not move the window.
+const OVERLAYS='.jv-header,.board-heading,.notice,.result-banner';
+function revealBelowHeader(node){
+  for(let pass=0;pass<2;pass++){const r=node.getBoundingClientRect();let top=0,bottom=innerHeight;
+    for(const o of document.querySelectorAll(OVERLAYS)){if(o.contains(node)||o.hidden)continue;const pos=getComputedStyle(o).position;if(pos!=='sticky'&&pos!=='fixed')continue;
+      const b=o.getBoundingClientRect();if(!b.height||b.right<=r.left||b.left>=r.right||b.bottom<=0||b.top>=innerHeight)continue;
+      if(b.top<innerHeight/2)top=Math.max(top,b.bottom);else bottom=Math.min(bottom,b.top);}
+    top+=8;bottom-=8;if(r.top<top)window.scrollBy(0,r.top-top);else if(r.bottom>bottom)window.scrollBy(0,Math.min(r.bottom-bottom,r.top-top));else return;}}
 function focusCell(i,{focus=true}={}){
   if(i<0||i>80)return;record('cell_focus',{cell:selected,durationMs:Math.min(60000,Math.max(0,performance.now()-focusStart))});focusStart=performance.now();selected=i;
-  updateSelection();if(focus)$('human-board').querySelector(`[data-cell="${i}"]`)?.focus();
+  updateSelection();if(focus){const c=$('human-board').querySelector(`[data-cell="${i}"]`);c?.focus({preventScroll:true});if(c)revealBelowHeader(c);}
 }
 function updateSelection(){const board=current?.human?.values||Array(81).fill(0),value=board[selected];
   for(const cell of $('human-board').querySelectorAll('.cell')){const i=Number(cell.dataset.cell);cell.classList.toggle('selected',i===selected);cell.classList.toggle('peer',PEERS[selected].includes(i)&&i!==selected);cell.classList.toggle('same-value',!!value&&board[i]===value&&i!==selected);cell.tabIndex=i===selected?0:-1;cell.setAttribute('aria-selected',String(i===selected));}
@@ -134,7 +145,13 @@ function digit(d,method='keyboard'){if(!current||replayMode||!['running','settli
 }
 function toggleNotes(){noteMode=!noteMode;$('notes').setAttribute('aria-pressed',String(noteMode));updateSelection();}
 function showView(view){currentView=view;for(const panel of document.querySelectorAll('.view'))panel.hidden=panel.id!==`view-${view}`;for(const button of document.querySelectorAll('[data-view]'))button.classList.toggle('active',button.dataset.view===view);
-  if(view==='analytics'){record('analysis_opened');loadAnalytics();}if(view==='leaderboards')loadLeaderboard();if(view==='profile')loadProfile();}
+  // The scroll offset is kept across views, so a long view can leave the next one's heading above the viewport or under the
+  // sticky header; scroll-margin-top on .view in game.css makes scrollIntoView stop below the header.
+  // The check runs again once the view's data has rendered: scroll anchoring can move the page while that content loads.
+  const reveal=()=>{const shown=$(`view-${view}`),header=document.querySelector('.jv-header');if(currentView===view&&shown&&shown.getBoundingClientRect().top<(header?header.getBoundingClientRect().bottom:0))shown.scrollIntoView({block:'start'});};
+  reveal();let loading=null;
+  if(view==='analytics'){record('analysis_opened');loading=loadAnalytics();}if(view==='leaderboards')loading=loadLeaderboard();if(view==='profile')loading=loadProfile();
+  if(loading)loading.then(()=>requestAnimationFrame(reveal),()=>{});}
 // On-screen views omit the per-decision candidate evidence (about a megabyte for a long game); the JSON download asks for all of it.
 async function loadAnalytics(full=false){try{if(full&&!local&&(reportMatchId||current?.id)){try{report=await api(`/api/matches/${reportMatchId||current.id}/analytics`);renderMatchAnalytics($('analytics-content'),report);return;}catch(e){if(e.message!=='evidence_too_large')throw e;full=false;notice('This game is too long for the full candidate evidence in the summary. It is included in the replay download.');}}if(local){report=analyzeMatch(localInitial,localEvents,[],{elapsedMs:elapsed()});}else if(reportMatchId||current?.id)report=await api(`/api/matches/${reportMatchId||current.id}/analytics${full?'':'?evidence=omit'}`);else report=null;renderMatchAnalytics($('analytics-content'),report);}catch(e){$('analytics-content').replaceChildren(el('div','empty-state jv-empty',friendly(e)));}}
 function download(name,content,type='application/json'){const blob=new Blob([content],{type}),url=URL.createObjectURL(blob),a=el('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);}
@@ -197,6 +214,11 @@ async function autoStart(){
   await startGame();
 }
 function setDifficulty(d){difficulty=d;storage.set('jev-difficulty',d);for(const b of document.querySelectorAll('[data-difficulty]')){b.classList.toggle('selected',b.dataset.difficulty===d);b.setAttribute('aria-pressed',String(b.dataset.difficulty===d));}}
+// Keyboard focus (Tab, Shift+Tab, skip link) on anything in main is kept clear of the sticky header. Browsers treat an element
+// covered by a sticky header as already in view, so scroll-margin alone does not move the page; pointer focus is left alone.
+let keyboardFocus=false;
+document.addEventListener('keydown',()=>{keyboardFocus=true;},true);document.addEventListener('pointerdown',()=>{keyboardFocus=false;},true);
+document.addEventListener('focusin',e=>{const t=e.target;if(keyboardFocus&&t instanceof Element&&t.closest('.jv-main')&&!t.closest('.jv-sheet'))revealBelowHeader(t);});
 for(const b of document.querySelectorAll('[data-view]'))b.addEventListener('click',()=>showView(b.dataset.view));
 for(const b of document.querySelectorAll('[data-difficulty]'))b.addEventListener('click',()=>setDifficulty(b.dataset.difficulty));
 for(const b of document.querySelectorAll('[data-digit]'))b.addEventListener('click',e=>digit(Number(b.dataset.digit),e.pointerType==='touch'?'touch':'mouse'));

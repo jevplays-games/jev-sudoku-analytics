@@ -17,6 +17,13 @@ assets are vendored into this repository.
 - Vendored at `public/brand/vt323.woff2` (copied from the shared jevplay.games brand kit)
 - License text at `public/brand/OFL-VT323.txt`
 
+## Art source fonts
+
+- `assets/src/fonts/Inter-Bold.ttf` (SIL Open Font License 1.1, licence text `assets/src/fonts/OFL-Inter.txt`) and
+  `assets/src/fonts/VT323-Regular.ttf` (SIL Open Font License 1.1, licence text `assets/src/fonts/OFL-VT323.txt`)
+- Copied from the jevplay.games org profile art sources; used only to re-render `assets/banner.png`,
+  `assets/social-preview.png` and `public/brand/og.png` from `assets/src/*.html`. Not served by the game.
+
 ## @discord/embedded-app-sdk
 
 - MIT License

@@ -1,4 +1,4 @@
-<p align="center"><img src="assets/banner.jpg" alt="Pixel-art robot Jev solving a nine-by-nine Sudoku grid filled with coloured dots and blocks." width="100%"></p>
+<p align="center"><img src="assets/banner.png" alt="Flat pink and ink pixel-window banner for Typedoku showing two sudoku boards racing side by side, a typed next-action panel and the Jev robot" width="100%"></p>
 
 <div align="center">
 
@@ -22,7 +22,7 @@ Typedoku is a Sudoku race: you and Jev get the same puzzle on separate boards, a
 > [!NOTE]
 > **What is shipped and measured.** This is a runnable implementation, not a claim of production certification. No live Discord account or paid Jev key was available during assembly; external flows were tested with mocks and cryptographic fixtures, and the included benchmark measures local selectors, not Jev's actual strength. See [Release boundaries](#release-boundaries).
 
-![Typedoku in a desktop browser: your board on the left, Jev's board on the right, with the race clock above.](reports/desktop-game.png)
+![Typedoku in a desktop browser during a practice race: your board on the left and the local heuristic opponent's board on the right.](reports/desktop-game.png)
 
 ## Quick start
 
@@ -80,7 +80,7 @@ There is no server process to keep the opponent moving between requests, so the 
 
 Open **Analytics** during or after a game. It provides a progress step chart, 81-cell edit heatmap, solving/decision/reliability panels, a technique table, a decision audit, and a complete versioned JSON report.
 
-![The analytics workbench: a progress step chart, an 81-cell edit heatmap and decision panels for one finished race.](reports/desktop-analytics.png)
+![The analytics workbench during a practice race: a progress step chart, an 81-cell edit heatmap and the solving and decision panels.](reports/desktop-analytics.png)
 
 Reports separate **authoritative server observations** from **optional, forgeable browser observations**. Browser collection is off by default. A confidence value is not calibrated Sudoku accuracy; filled cells are not proof of correctness. Unknown cost and empty denominators are `null`, not invented zeroes.
 
@@ -140,7 +140,7 @@ Review the number of puzzles, profiles, and maximum actions before running it. T
 - [Testing and release evidence](docs/TESTING.md): exact checks and untested boundaries.
 - [Source references](docs/SOURCES.md): official documentation used for integration contracts.
 - `docs/source-prompt.md`: supplied architectural brief, preserved as source material.
-- `reports/workers/`: regenerated evidence for the Cloudflare build (request CPU benchmark, tests, browser and maintenance smoke). `reports/*` outside that folder is the original container-era evidence, kept as history.
+- `reports/workers/`: regenerated evidence for the Cloudflare build (request CPU benchmark, tests, browser and maintenance smoke). The screenshots `reports/desktop-game.png`, `desktop-analytics.png` (both shown above) and `mobile-game.png` are copies of the current `reports/workers/` ones; the rest of `reports/*` is the original container-era evidence, kept as history.
 
 ## Repository layout
 
@@ -154,7 +154,7 @@ scripts/                Benchmarks, puzzle publishing, analytics, Discord regist
 fixtures/               Golden candidates, rule cases and a pre-rename replay
 tests/                  node --test suites
 docs/                   Deployment, Workers design, architecture, analytics, security, testing, sources
-reports/                Screenshots and release evidence (history; not rewritten by the rename)
+reports/                Current screenshots and release evidence (history; not rewritten by the rename)
 wrangler.jsonc          Worker jev-typedoku, routes, D1 binding, vars
 ```
 

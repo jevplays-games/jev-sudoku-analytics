@@ -1,4 +1,4 @@
-/* Typedoku. Every colour comes from the shared jevplay.games tokens in brand.css; this file defines no hex values.
+/* Typedoku. Every colour comes from the shared jevplay.games tokens in brand.css; the only hex values here are the two D8 chart tokens.
    Board legend, readable without colour: givens are grey tiles with Inter 700 digits; entries are paper wells with VT323 digits;
    a blocked entry is hatched and carries a cross; the selected cell has a magenta ring and a corner tick. */
 :root{
@@ -12,6 +12,13 @@
   --chart-jev:#7A4E0B;--chart-human:#155A80;
   --empty-art:url(/art/empty.svg)
 }
+/* The shared header is sticky. The skip-link target, the views and their headings (tab switch) and every focusable control in
+   main (Tab / Shift+Tab focus scrolling) stop 8px below it; arrow-key focus on cells is kept clear of it in game.js
+   (revealBelowHeader). Header controls are outside .jv-main, so focusing them never scrolls the page. This is set on those targets, not as html scroll-padding, which would also make focus moving
+   into the sticky header itself (Shift+Tab, closing the menu) scroll the page. */
+#human-board,.view,.view h1,.jv-main :is(a[href],button,input,select,textarea,[tabindex]){scroll-margin-top:calc(var(--header-h) + var(--sa-t) + 8px)}
+/* "Local heuristic won" stays on one line in My stats history; the table already scrolls sideways on phones. */
+#profile-content td:nth-child(4){white-space:nowrap}
 body{font-size:var(--fs-sm)}button,input,select{font:inherit}
 button,.button,select,input[type=date]{border:1px solid var(--ink);border-radius:0;background:var(--paper);color:var(--text);padding:var(--s2) var(--s4);min-height:var(--tap)}
 button,.button{cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:var(--s2);font-family:var(--font-pixel);font-size:var(--fs-md);font-weight:400;letter-spacing:.04em;white-space:nowrap;box-shadow:var(--drop-sm)}
@@ -25,6 +32,8 @@ button:disabled{opacity:.45;cursor:not-allowed;box-shadow:none}
 .jv-status .status-dot{background:var(--ink)}
 .view{display:block}
 .intro{display:flex;align-items:center;justify-content:space-between;padding:0 0 var(--s5);gap:var(--s5)}
+/* The boards come first (order:-1), so the hero needs its own gap or its eyebrow sits on the cards' drop shadow. */
+#view-play>.intro{margin-top:var(--s5)}
 .intro h1 span{background:var(--ink);color:var(--pink);padding:0 .15em}
 .eyebrow{font-family:var(--font-pixel);font-size:var(--fs-md);letter-spacing:var(--track-caps);color:var(--ink);font-weight:400}
 .intro p,.section-heading p{color:var(--ink);margin:0}
@@ -39,6 +48,8 @@ button:disabled{opacity:.45;cursor:not-allowed;box-shadow:none}
 .segmented .selected{background:var(--ink);color:var(--paper);border-color:var(--ink)}
 .mode-control select{width:100%;max-width:270px;font-size:var(--fs-xs);padding:var(--s2) var(--s3);min-height:var(--tap)}
 .setup>.primary{min-height:var(--tap);min-width:10rem}
+/* The rules "?" is a key like its neighbours: brand.css's .jv-icon-btn border is transparent, which left only the drop shadow. */
+.setup .jv-icon-btn{border-color:var(--ink);background:var(--paper)}
 .matchbar{display:flex;justify-content:space-between;align-items:center;gap:var(--s3);padding:var(--s4) 2px var(--s3)}.matchbar>div{display:flex;align-items:center;gap:var(--s3)}
 .live-tag{font-family:var(--font-pixel);font-size:var(--fs-md);color:var(--ink);background:var(--paper);letter-spacing:.08em;border:1px solid var(--ink);padding:2px var(--s2);border-radius:0}
 .live-tag.offline{background:var(--jev-soft);border-style:dashed}
@@ -152,9 +163,12 @@ details pre{overflow:auto;font-size:var(--fs-xs);max-height:24rem;background:var
 .empty-state{padding:var(--s7) var(--s5);text-align:center;color:var(--muted);border:1px dashed var(--ink);border-radius:0}.empty-state.jv-empty{border:0}
 .filterbar{display:flex;flex-wrap:wrap;align-items:end;gap:var(--s4);padding:var(--s4);background:var(--grey);border:1px solid var(--ink);border-radius:0;margin-bottom:var(--s4);box-shadow:var(--raise)}
 .filterbar label{display:flex;flex-direction:column;gap:var(--s2);font-size:var(--fs-xs);color:var(--ink)}.filterbar select,.filterbar input{min-height:var(--tap)}
+/* Stacked windows on My stats keep the same gap as the rest of the page instead of sitting on each other's shadow. */
+#view-profile>.jv-panel{margin-top:var(--s5)}
 .consent{display:flex;align-items:start;gap:var(--s2);font-size:var(--fs-sm)}.consent input{accent-color:var(--ink);margin-top:4px;min-width:20px;min-height:20px}
-.button input[type=file]{max-width:15rem;font-size:var(--fs-xs)}
-.replay-panel{margin-bottom:var(--s4)}.replay-panel label{display:flex;flex-wrap:wrap;align-items:center;gap:var(--s4)}.replay-panel input{flex:1;min-width:10rem;min-height:var(--tap)}
+/* The replay-import picker is a key holding a file input: on phones it wraps inside its window instead of running off-screen. */
+label.button{max-width:100%;flex-wrap:wrap;white-space:normal}.button input[type=file]{max-width:min(15rem,100%);min-width:0;font-size:var(--fs-xs)}
+.replay-panel{margin-bottom:var(--s4)}.replay-panel label{display:flex;flex-wrap:wrap;align-items:center;gap:var(--s4)}.replay-panel input{flex:1;min-width:10rem;min-height:var(--tap);accent-color:var(--ink)}
 footer{border-top:1px solid var(--ink);padding:var(--s5) 0 var(--s6);display:flex;flex-wrap:wrap;justify-content:space-between;gap:var(--s3);color:var(--ink);font-family:var(--font-pixel);font-size:var(--fs-md);letter-spacing:.06em}
 dialog{background:var(--grey);color:var(--text);max-width:40rem;width:calc(100% - var(--s6));max-height:85vh;max-height:85dvh;border:1px solid var(--ink);border-radius:0;padding:var(--s5);box-shadow:var(--raise)}
 dialog::backdrop{background:color-mix(in srgb,var(--ink) 60%,transparent)}
@@ -163,17 +177,28 @@ dialog::backdrop{background:color-mix(in srgb,var(--ink) 60%,transparent)}
 dialog p{color:var(--ink);font-size:var(--fs-sm)}dialog h3{font-size:var(--fs-md);margin-top:var(--s5)}
 
 @media(hover:hover){
-  button:hover:not(:disabled),.button:hover{background:var(--grey)}
+  /* Board cells are buttons but take their hover from the board rule below: the generic grey would turn a selected entry into the
+     given-tile grey and wipe the conflict hatch while the pointer rests on the cell just played. :where() keeps this rule's
+     specificity where it was, below .primary:hover and the pressed-state rules. */
+  button:hover:not(:disabled):not(:where(.cell)),.button:hover{background:var(--grey)}
   .primary:hover:not(:disabled){background:var(--ink);outline:2px solid var(--magenta);outline-offset:1px}
-  .segmented .selected:hover:not(:disabled){background:var(--ink)}
+  .segmented .selected:hover:not(:disabled),.board-tools button[aria-pressed=true]:hover:not(:disabled){background:var(--ink)}
   .keypad button:hover:not(:disabled){background:var(--grey)}
   .sudoku-board:not(.readonly) .cell:not(.given):not(.selected):not(.conflict):hover{background:var(--human-ink)}
 }
-@media(min-width:900px){#jv-controls .identity{flex-wrap:nowrap;gap:var(--s2);padding:0}#jv-controls #identity-label{max-width:9rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#jv-controls .button.small,#jv-controls button.small{min-height:36px;padding:var(--s1) var(--s2)}}
+/* Header. The four tabs plus the account block are wider than brand.css's 50vw cap on #jv-controls below about 1366px; under the cap
+   the tab strip shrank beneath the account block (MY STATS could not be clicked at 1024px). The block keeps its natural width here,
+   and below 1366px the "Guest session" label (the sign-in button already says it) is dropped and a signed-in name is shortened. */
+@media(min-width:900px){#jv-controls{max-width:none}#jv-controls>.jv-nav,#jv-controls>.identity{flex:none}#jv-controls .identity{flex-wrap:nowrap;gap:var(--s2);padding:0}#jv-controls #identity-label{max-width:9rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#jv-controls .button.small,#jv-controls button.small{min-height:36px;padding:var(--s1) var(--s2)}}
+@media(min-width:900px) and (max-width:1365px){#jv-controls .identity:has(#logout[hidden]) #identity-label{display:none}#jv-controls #identity-label{max-width:6rem}#jv-controls .jv-sheet-item{padding:0 var(--s2)}}
+/* The mark is drawn on a 16-px lattice with its own ink frame and offset shadow: no second border, so it renders at a whole 32px.
+   The menu icon stays a flat header glyph (game buttons carry a drop shadow; without a border it read as a stray L). */
+.jv-header .jv-mark{border:0}.jv-header .jv-icon-btn{box-shadow:none}
 @media(max-width:899px){.boards{grid-template-columns:1fr;gap:var(--s4)}.sudoku-board{--fit-reserve:20rem}.chart-grid,.metrics-grid{grid-template-columns:1fr}}
 @media(max-width:600px){.intro{flex-direction:column;align-items:flex-start;gap:var(--s3);padding-bottom:var(--s4)}.intro p{font-size:var(--fs-xs)}.setup{padding:var(--s3);gap:var(--s2)}.setup>.primary{flex:1 1 10rem}.board-card{padding:var(--s3)}.board-tools button{min-width:0;flex:1 1 30%}.board-tools kbd{display:none}.matchbar{padding-top:var(--s4)}.matchbar>div{gap:var(--s2)}.clock{font-size:var(--fs-num-sm)}.bottom-bar{align-items:start;flex-direction:column;gap:var(--s3);margin-bottom:var(--s5)}.bottom-bar>div{align-self:stretch}.section-heading{flex-direction:column;align-items:flex-start;gap:var(--s4)}.kpi{padding:var(--s3)}.filterbar label{flex:1;min-width:8rem}footer>span:nth-child(2){order:3;width:100%}.chart-panel{padding:var(--s3)}.is-jev .board-heading{position:sticky;top:calc(var(--header-h) + var(--sa-t));background:var(--grey);z-index:2;padding:var(--s1) 0}
   .sudoku-board{--fit-reserve:22rem}.keypad{grid-template-columns:repeat(9,minmax(0,1fr));gap:4px}.keypad button{min-height:44px;font-size:var(--fs-lg)}}
-@media(max-width:420px){.keypad{grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}.keypad button{min-height:48px;font-size:var(--fs-xl)}}
+@media(max-width:420px){.decision-kpis span{font-size:var(--fs-sm);letter-spacing:.02em}.decision-kpis>div+div{padding-left:var(--s2)}.keypad{grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}.keypad button{min-height:48px;font-size:var(--fs-xl)}}
+@media(max-width:359px){.decision-kpis span{font-size:var(--fs-xs);letter-spacing:0}}
 @media(min-width:900px) and (min-height:700px){.sudoku-board{--fit-reserve:24rem}}
 @media(min-width:900px) and (max-height:900px){.sudoku-board{--fit-reserve:19rem}}
 @media(max-height:560px){.intro{display:none}.sudoku-board{--fit-reserve:13rem;--fit-max:26rem}.matchbar{padding:var(--s2) 2px}.thinking-card{margin-top:var(--s2)}.keypad{margin:var(--s2) 0}
