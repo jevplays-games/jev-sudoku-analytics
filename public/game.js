@@ -30,7 +30,7 @@ async function flushTelemetry(){if(!telemetry.length||!current?.id||local)return
 function saveNotes(){if(current?.id)storage.set(`jev-notes:${current.id}`,notes);}
 function focusCell(i,{focus=true}={}){
   if(i<0||i>80)return;record('cell_focus',{cell:selected,durationMs:Math.min(60000,Math.max(0,performance.now()-focusStart))});focusStart=performance.now();selected=i;
-  updateSelection();if(focus)$('human-board').querySelector(`[data-cell="${i}"]`)?.focus();
+  updateSelection();if(focus){const c=$('human-board').querySelector(`[data-cell="${i}"]`);c?.focus({preventScroll:true});c?.scrollIntoView({block:'nearest',inline:'nearest'});}
 }
 function updateSelection(){const board=current?.human?.values||Array(81).fill(0),value=board[selected];
   for(const cell of $('human-board').querySelectorAll('.cell')){const i=Number(cell.dataset.cell);cell.classList.toggle('selected',i===selected);cell.classList.toggle('peer',PEERS[selected].includes(i)&&i!==selected);cell.classList.toggle('same-value',!!value&&board[i]===value&&i!==selected);cell.tabIndex=i===selected?0:-1;cell.setAttribute('aria-selected',String(i===selected));}
@@ -134,6 +134,9 @@ function digit(d,method='keyboard'){if(!current||replayMode||!['running','settli
 }
 function toggleNotes(){noteMode=!noteMode;$('notes').setAttribute('aria-pressed',String(noteMode));updateSelection();}
 function showView(view){currentView=view;for(const panel of document.querySelectorAll('.view'))panel.hidden=panel.id!==`view-${view}`;for(const button of document.querySelectorAll('[data-view]'))button.classList.toggle('active',button.dataset.view===view);
+  // The scroll offset is kept across views, so a long view can leave the next one's heading above the viewport or under the
+  // sticky header; scroll-padding-top in game.css makes scrollIntoView stop below the header.
+  const shown=$(`view-${view}`),header=document.querySelector('.jv-header');if(shown&&shown.getBoundingClientRect().top<(header?header.getBoundingClientRect().bottom:0))shown.scrollIntoView({block:'start'});
   if(view==='analytics'){record('analysis_opened');loadAnalytics();}if(view==='leaderboards')loadLeaderboard();if(view==='profile')loadProfile();}
 // On-screen views omit the per-decision candidate evidence (about a megabyte for a long game); the JSON download asks for all of it.
 async function loadAnalytics(full=false){try{if(full&&!local&&(reportMatchId||current?.id)){try{report=await api(`/api/matches/${reportMatchId||current.id}/analytics`);renderMatchAnalytics($('analytics-content'),report);return;}catch(e){if(e.message!=='evidence_too_large')throw e;full=false;notice('This game is too long for the full candidate evidence in the summary. It is included in the replay download.');}}if(local){report=analyzeMatch(localInitial,localEvents,[],{elapsedMs:elapsed()});}else if(reportMatchId||current?.id)report=await api(`/api/matches/${reportMatchId||current.id}/analytics${full?'':'?evidence=omit'}`);else report=null;renderMatchAnalytics($('analytics-content'),report);}catch(e){$('analytics-content').replaceChildren(el('div','empty-state jv-empty',friendly(e)));}}

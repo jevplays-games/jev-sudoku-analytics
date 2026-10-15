@@ -151,3 +151,18 @@ test('the Discord interactions endpoint refuses unsigned requests before touchin
   const r = await x.send('/api/discord/interactions', { method: 'POST', body: { type: 1 } }); assert.equal(r.status, 401);
   assert.equal((await env.DB.prepare('SELECT COUNT(*) n FROM security_tokens').first()).n, 0);
 });
+test('the local adapter answers 400, not 500, for request targets that cannot become a Request (userinfo, invalid port)', async () => {
+  const { request } = await import('node:http');
+  const app = createLocalApp({ APP_ORIGIN: 'https://typedoku.jevplay.games', LEGACY_APP_ORIGINS: 'https://sudoku.jevplay.games', PORT: '0', LAUNCH_SIGNING_KEY: 'a'.repeat(64) }, { databasePath: ':memory:' });
+  await new Promise(r => app.server.listen(0, '127.0.0.1', r));
+  const send = (path, host = 'typedoku.jevplay.games') => new Promise((resolve, reject) => {
+    const req = request({ host: '127.0.0.1', port: app.server.address().port, path, method: 'GET', headers: { host } }, res => { res.resume(); res.on('end', () => resolve(res.statusCode)); });
+    req.on('error', reject); req.end();
+  });
+  try {
+    for (const target of ['//user:pw@evil.example/', 'https://user:pw@evil.example/', '//:pw@evil.example/', '//evil.example:99999/', 'https://typedoku.jevplay.games:99999/api/health'])
+      assert.equal(await send(target), 400, target);
+    assert.equal(await send('/api/health'), 200, 'ordinary requests are unaffected');
+    assert.equal(await send('/api/health', 'sudoku.jevplay.games'), 200, 'the legacy host is still served');
+  } finally { await app.close(); }
+});

@@ -12,6 +12,8 @@
   --chart-jev:#7A4E0B;--chart-human:#155A80;
   --empty-art:url(/art/empty.svg)
 }
+/* The shared header is sticky; skip-link targets, scrollIntoView and focus scrolling stop 8px below it, never under it. */
+html{scroll-padding-top:calc(var(--header-h) + var(--sa-t) + 8px)}
 body{font-size:var(--fs-sm)}button,input,select{font:inherit}
 button,.button,select,input[type=date]{border:1px solid var(--ink);border-radius:0;background:var(--paper);color:var(--text);padding:var(--s2) var(--s4);min-height:var(--tap)}
 button,.button{cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:var(--s2);font-family:var(--font-pixel);font-size:var(--fs-md);font-weight:400;letter-spacing:.04em;white-space:nowrap;box-shadow:var(--drop-sm)}

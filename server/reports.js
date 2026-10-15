@@ -30,6 +30,10 @@ export async function leaderboard(env, session, params, at = now(env)) {
   const hasMore = entries.length > requestedLimit; entries.splice(requestedLimit);
   return { scope, date, difficulty, published: true, entries, nextCursor: hasMore ? b64url(utf8(JSON.stringify({ scope, date, difficulty, offset: offset + requestedLimit }))) : null };
 }
+// The same opponent wording the live board uses (matches.js project()): a match without a provider key is decided by the
+// local heuristic from its first event, and a provider failure hands the rest of the race to the heuristic.
+const FALLBACK_REASONS = new Set(['provider_fallback', 'request_budget', 'adapter_error']);
+export const opponentLabel = reason => reason === 'local_opponent' ? 'Local heuristic' : FALLBACK_REASONS.has(reason) ? 'Heuristic fallback' : 'Jev';
 export async function personalReports(env, session, limit = 200) {
   const where = session.user_id ? 'm.user_id=?' : 'm.owner_hash=?', value = session.user_id || session.hash;
   const total = (await one(env, `SELECT COUNT(*) AS n FROM matches m WHERE ${where}`, value)).n;
@@ -39,7 +43,7 @@ export async function personalReports(env, session, limit = 200) {
   return { coverage: { returned: rows.length, total, limit, truncated: total > limit, order: 'Most recent matches; streaks apply to this returned window.' },
     summary: aggregateReports([...summaries].reverse()), history: rows.map((r, i) => { const report = summaries[i];
       return { id: r.id, createdAt: r.created_at, phase: report.game.phase, difficulty: report.dimensions.difficulty, mode: report.dimensions.mode,
-        eligibility: report.game.eligibility, outcome: report.game.outcome, humanTimeMs: report.game.humanFinishMs, jevTimeMs: report.game.jevFinishMs }; }) };
+        eligibility: report.game.eligibility, outcome: report.game.outcome, opponent: opponentLabel(report.game.ineligibleReason), humanTimeMs: report.game.humanFinishMs, jevTimeMs: report.game.jevFinishMs }; }) };
 }
 export async function operatorReport(env, { days = 30, at = now(env), difficulty = null } = {}) {
   if (!Number.isInteger(days) || days < 1 || days > 365) throw httpError(422, 'invalid_days');

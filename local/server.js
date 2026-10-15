@@ -40,7 +40,10 @@ export function createLocalApp(environment = process.env, { databasePath } = {})
       if (trustProxy) { const hop = String(req.headers['x-forwarded-for'] ?? '').split(',').pop().trim(); if (hop) headers.set('cf-connecting-ip', hop); }
       // Behind the Train tunnel one container serves the canonical and the legacy hostnames; keep whichever one was asked for.
       const base = config.origins.find(o => new URL(o).host === req.headers.host) ?? config.origin;
-      const request = new Request(new URL(req.url, base), { method: req.method, headers, ...(!['GET', 'HEAD'].includes(req.method) ? { body: req, duplex: 'half' } : {}) });
+      // A target such as //user:pw@evil.example/ or //host:99999/ cannot become a Request (credentials, invalid port): that is
+      // the client's malformed request, so answer 400 instead of falling into the 500 handler. Host matching above is unchanged.
+      let target; try { target = new URL(req.url, base); if (target.username || target.password) throw new Error('credentials'); } catch { res.writeHead(400, { 'Content-Type': 'text/plain; charset=utf-8' }); res.end('Bad request target'); return; }
+      const request = new Request(target, { method: req.method, headers, ...(!['GET', 'HEAD'].includes(req.method) ? { body: req, duplex: 'half' } : {}) });
       const response = await handle(request, env, ctx);
       const out = {}; for (const [k, v] of response.headers) if (k !== 'set-cookie') out[k] = v;
       const cookies = response.headers.getSetCookie?.() ?? []; if (cookies.length) out['set-cookie'] = cookies;
