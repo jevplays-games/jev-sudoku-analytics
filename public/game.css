@@ -39,6 +39,8 @@ button:disabled{opacity:.45;cursor:not-allowed;box-shadow:none}
 .segmented .selected{background:var(--ink);color:var(--paper);border-color:var(--ink)}
 .mode-control select{width:100%;max-width:270px;font-size:var(--fs-xs);padding:var(--s2) var(--s3);min-height:var(--tap)}
 .setup>.primary{min-height:var(--tap);min-width:10rem}
+/* The rules "?" is a key like its neighbours: brand.css's .jv-icon-btn border is transparent, which left only the drop shadow. */
+.setup .jv-icon-btn{border-color:var(--ink);background:var(--paper)}
 .matchbar{display:flex;justify-content:space-between;align-items:center;gap:var(--s3);padding:var(--s4) 2px var(--s3)}.matchbar>div{display:flex;align-items:center;gap:var(--s3)}
 .live-tag{font-family:var(--font-pixel);font-size:var(--fs-md);color:var(--ink);background:var(--paper);letter-spacing:.08em;border:1px solid var(--ink);padding:2px var(--s2);border-radius:0}
 .live-tag.offline{background:var(--jev-soft);border-style:dashed}
@@ -163,9 +165,12 @@ dialog::backdrop{background:color-mix(in srgb,var(--ink) 60%,transparent)}
 dialog p{color:var(--ink);font-size:var(--fs-sm)}dialog h3{font-size:var(--fs-md);margin-top:var(--s5)}
 
 @media(hover:hover){
-  button:hover:not(:disabled),.button:hover{background:var(--grey)}
+  /* Board cells are buttons but take their hover from the board rule below: the generic grey would turn a selected entry into the
+     given-tile grey and wipe the conflict hatch while the pointer rests on the cell just played. :where() keeps this rule's
+     specificity where it was, below .primary:hover and the pressed-state rules. */
+  button:hover:not(:disabled):not(:where(.cell)),.button:hover{background:var(--grey)}
   .primary:hover:not(:disabled){background:var(--ink);outline:2px solid var(--magenta);outline-offset:1px}
-  .segmented .selected:hover:not(:disabled){background:var(--ink)}
+  .segmented .selected:hover:not(:disabled),.board-tools button[aria-pressed=true]:hover:not(:disabled){background:var(--ink)}
   .keypad button:hover:not(:disabled){background:var(--grey)}
   .sudoku-board:not(.readonly) .cell:not(.given):not(.selected):not(.conflict):hover{background:var(--human-ink)}
 }
