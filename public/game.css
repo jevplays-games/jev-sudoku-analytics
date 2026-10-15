@@ -169,7 +169,14 @@ dialog p{color:var(--ink);font-size:var(--fs-sm)}dialog h3{font-size:var(--fs-md
   .keypad button:hover:not(:disabled){background:var(--grey)}
   .sudoku-board:not(.readonly) .cell:not(.given):not(.selected):not(.conflict):hover{background:var(--human-ink)}
 }
-@media(min-width:900px){#jv-controls .identity{flex-wrap:nowrap;gap:var(--s2);padding:0}#jv-controls #identity-label{max-width:9rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#jv-controls .button.small,#jv-controls button.small{min-height:36px;padding:var(--s1) var(--s2)}}
+/* Header. The four tabs plus the account block are wider than brand.css's 50vw cap on #jv-controls below about 1366px; under the cap
+   the tab strip shrank beneath the account block (MY STATS could not be clicked at 1024px). The block keeps its natural width here,
+   and below 1366px the "Guest session" label (the sign-in button already says it) is dropped and a signed-in name is shortened. */
+@media(min-width:900px){#jv-controls{max-width:none}#jv-controls>.jv-nav,#jv-controls>.identity{flex:none}#jv-controls .identity{flex-wrap:nowrap;gap:var(--s2);padding:0}#jv-controls #identity-label{max-width:9rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#jv-controls .button.small,#jv-controls button.small{min-height:36px;padding:var(--s1) var(--s2)}}
+@media(min-width:900px) and (max-width:1365px){#jv-controls .identity:has(#logout[hidden]) #identity-label{display:none}#jv-controls #identity-label{max-width:6rem}#jv-controls .jv-sheet-item{padding:0 var(--s2)}}
+/* The mark is drawn on a 16-px lattice with its own ink frame and offset shadow: no second border, so it renders at a whole 32px.
+   The menu icon stays a flat header glyph (game buttons carry a drop shadow; without a border it read as a stray L). */
+.jv-header .jv-mark{border:0}.jv-header .jv-icon-btn{box-shadow:none}
 @media(max-width:899px){.boards{grid-template-columns:1fr;gap:var(--s4)}.sudoku-board{--fit-reserve:20rem}.chart-grid,.metrics-grid{grid-template-columns:1fr}}
 @media(max-width:600px){.intro{flex-direction:column;align-items:flex-start;gap:var(--s3);padding-bottom:var(--s4)}.intro p{font-size:var(--fs-xs)}.setup{padding:var(--s3);gap:var(--s2)}.setup>.primary{flex:1 1 10rem}.board-card{padding:var(--s3)}.board-tools button{min-width:0;flex:1 1 30%}.board-tools kbd{display:none}.matchbar{padding-top:var(--s4)}.matchbar>div{gap:var(--s2)}.clock{font-size:var(--fs-num-sm)}.bottom-bar{align-items:start;flex-direction:column;gap:var(--s3);margin-bottom:var(--s5)}.bottom-bar>div{align-self:stretch}.section-heading{flex-direction:column;align-items:flex-start;gap:var(--s4)}.kpi{padding:var(--s3)}.filterbar label{flex:1;min-width:8rem}footer>span:nth-child(2){order:3;width:100%}.chart-panel{padding:var(--s3)}.is-jev .board-heading{position:sticky;top:calc(var(--header-h) + var(--sa-t));background:var(--grey);z-index:2;padding:var(--s1) 0}
   .sudoku-board{--fit-reserve:22rem}.keypad{grid-template-columns:repeat(9,minmax(0,1fr));gap:4px}.keypad button{min-height:44px;font-size:var(--fs-lg)}}
