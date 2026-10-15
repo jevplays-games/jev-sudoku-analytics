@@ -25,6 +25,8 @@ button:disabled{opacity:.45;cursor:not-allowed;box-shadow:none}
 .jv-status .status-dot{background:var(--ink)}
 .view{display:block}
 .intro{display:flex;align-items:center;justify-content:space-between;padding:0 0 var(--s5);gap:var(--s5)}
+/* The boards come first (order:-1), so the hero needs its own gap or its eyebrow sits on the cards' drop shadow. */
+#view-play>.intro{margin-top:var(--s5)}
 .intro h1 span{background:var(--ink);color:var(--pink);padding:0 .15em}
 .eyebrow{font-family:var(--font-pixel);font-size:var(--fs-md);letter-spacing:var(--track-caps);color:var(--ink);font-weight:400}
 .intro p,.section-heading p{color:var(--ink);margin:0}
@@ -154,9 +156,11 @@ details pre{overflow:auto;font-size:var(--fs-xs);max-height:24rem;background:var
 .empty-state{padding:var(--s7) var(--s5);text-align:center;color:var(--muted);border:1px dashed var(--ink);border-radius:0}.empty-state.jv-empty{border:0}
 .filterbar{display:flex;flex-wrap:wrap;align-items:end;gap:var(--s4);padding:var(--s4);background:var(--grey);border:1px solid var(--ink);border-radius:0;margin-bottom:var(--s4);box-shadow:var(--raise)}
 .filterbar label{display:flex;flex-direction:column;gap:var(--s2);font-size:var(--fs-xs);color:var(--ink)}.filterbar select,.filterbar input{min-height:var(--tap)}
+/* Stacked windows on My stats keep the same gap as the rest of the page instead of sitting on each other's shadow. */
+#view-profile>.jv-panel{margin-top:var(--s5)}
 .consent{display:flex;align-items:start;gap:var(--s2);font-size:var(--fs-sm)}.consent input{accent-color:var(--ink);margin-top:4px;min-width:20px;min-height:20px}
 .button input[type=file]{max-width:15rem;font-size:var(--fs-xs)}
-.replay-panel{margin-bottom:var(--s4)}.replay-panel label{display:flex;flex-wrap:wrap;align-items:center;gap:var(--s4)}.replay-panel input{flex:1;min-width:10rem;min-height:var(--tap)}
+.replay-panel{margin-bottom:var(--s4)}.replay-panel label{display:flex;flex-wrap:wrap;align-items:center;gap:var(--s4)}.replay-panel input{flex:1;min-width:10rem;min-height:var(--tap);accent-color:var(--ink)}
 footer{border-top:1px solid var(--ink);padding:var(--s5) 0 var(--s6);display:flex;flex-wrap:wrap;justify-content:space-between;gap:var(--s3);color:var(--ink);font-family:var(--font-pixel);font-size:var(--fs-md);letter-spacing:.06em}
 dialog{background:var(--grey);color:var(--text);max-width:40rem;width:calc(100% - var(--s6));max-height:85vh;max-height:85dvh;border:1px solid var(--ink);border-radius:0;padding:var(--s5);box-shadow:var(--raise)}
 dialog::backdrop{background:color-mix(in srgb,var(--ink) 60%,transparent)}
@@ -185,7 +189,8 @@ dialog p{color:var(--ink);font-size:var(--fs-sm)}dialog h3{font-size:var(--fs-md
 @media(max-width:899px){.boards{grid-template-columns:1fr;gap:var(--s4)}.sudoku-board{--fit-reserve:20rem}.chart-grid,.metrics-grid{grid-template-columns:1fr}}
 @media(max-width:600px){.intro{flex-direction:column;align-items:flex-start;gap:var(--s3);padding-bottom:var(--s4)}.intro p{font-size:var(--fs-xs)}.setup{padding:var(--s3);gap:var(--s2)}.setup>.primary{flex:1 1 10rem}.board-card{padding:var(--s3)}.board-tools button{min-width:0;flex:1 1 30%}.board-tools kbd{display:none}.matchbar{padding-top:var(--s4)}.matchbar>div{gap:var(--s2)}.clock{font-size:var(--fs-num-sm)}.bottom-bar{align-items:start;flex-direction:column;gap:var(--s3);margin-bottom:var(--s5)}.bottom-bar>div{align-self:stretch}.section-heading{flex-direction:column;align-items:flex-start;gap:var(--s4)}.kpi{padding:var(--s3)}.filterbar label{flex:1;min-width:8rem}footer>span:nth-child(2){order:3;width:100%}.chart-panel{padding:var(--s3)}.is-jev .board-heading{position:sticky;top:calc(var(--header-h) + var(--sa-t));background:var(--grey);z-index:2;padding:var(--s1) 0}
   .sudoku-board{--fit-reserve:22rem}.keypad{grid-template-columns:repeat(9,minmax(0,1fr));gap:4px}.keypad button{min-height:44px;font-size:var(--fs-lg)}}
-@media(max-width:420px){.keypad{grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}.keypad button{min-height:48px;font-size:var(--fs-xl)}}
+@media(max-width:420px){.decision-kpis span{font-size:var(--fs-sm);letter-spacing:.02em}.decision-kpis>div+div{padding-left:var(--s2)}.keypad{grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}.keypad button{min-height:48px;font-size:var(--fs-xl)}}
+@media(max-width:359px){.decision-kpis span{font-size:var(--fs-xs);letter-spacing:0}}
 @media(min-width:900px) and (min-height:700px){.sudoku-board{--fit-reserve:24rem}}
 @media(min-width:900px) and (max-height:900px){.sudoku-board{--fit-reserve:19rem}}
 @media(max-height:560px){.intro{display:none}.sudoku-board{--fit-reserve:13rem;--fit-max:26rem}.matchbar{padding:var(--s2) 2px}.thinking-card{margin-top:var(--s2)}.keypad{margin:var(--s2) 0}
