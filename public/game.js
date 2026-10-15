@@ -28,9 +28,13 @@ async function api(path,{method='GET',body}={}){
 function record(name,properties={}){if(!me?.telemetryConsent||local||!current?.id)return;if(telemetry.length<200)telemetry.push({id:uuid(),name,properties});}
 async function flushTelemetry(){if(!telemetry.length||!current?.id||local)return;const batch=telemetry.splice(0,50);try{await api(`/api/matches/${current.id}/telemetry`,{method:'POST',body:{events:batch}});}catch{/* Optional observations never block play or retry forever. */}}
 function saveNotes(){if(current?.id)storage.set(`jev-notes:${current.id}`,notes);}
+// Keyboard focus must never sit under the sticky header (WCAG 2.4.11). Scroll the window just enough to keep the element 8px
+// below the header and inside the viewport. Explicit, because scroll-margin on a cell inside the board does not move the window.
+function revealBelowHeader(node){const r=node.getBoundingClientRect(),top=(document.querySelector('.jv-header')?.getBoundingClientRect().bottom||0)+8;
+  if(r.top<top)window.scrollBy(0,r.top-top);else if(r.bottom>innerHeight-8)window.scrollBy(0,Math.min(r.bottom-innerHeight+8,r.top-top));}
 function focusCell(i,{focus=true}={}){
   if(i<0||i>80)return;record('cell_focus',{cell:selected,durationMs:Math.min(60000,Math.max(0,performance.now()-focusStart))});focusStart=performance.now();selected=i;
-  updateSelection();if(focus){const c=$('human-board').querySelector(`[data-cell="${i}"]`);c?.focus({preventScroll:true});c?.scrollIntoView({block:'nearest',inline:'nearest'});}
+  updateSelection();if(focus){const c=$('human-board').querySelector(`[data-cell="${i}"]`);c?.focus({preventScroll:true});if(c)revealBelowHeader(c);}
 }
 function updateSelection(){const board=current?.human?.values||Array(81).fill(0),value=board[selected];
   for(const cell of $('human-board').querySelectorAll('.cell')){const i=Number(cell.dataset.cell);cell.classList.toggle('selected',i===selected);cell.classList.toggle('peer',PEERS[selected].includes(i)&&i!==selected);cell.classList.toggle('same-value',!!value&&board[i]===value&&i!==selected);cell.tabIndex=i===selected?0:-1;cell.setAttribute('aria-selected',String(i===selected));}
@@ -135,7 +139,7 @@ function digit(d,method='keyboard'){if(!current||replayMode||!['running','settli
 function toggleNotes(){noteMode=!noteMode;$('notes').setAttribute('aria-pressed',String(noteMode));updateSelection();}
 function showView(view){currentView=view;for(const panel of document.querySelectorAll('.view'))panel.hidden=panel.id!==`view-${view}`;for(const button of document.querySelectorAll('[data-view]'))button.classList.toggle('active',button.dataset.view===view);
   // The scroll offset is kept across views, so a long view can leave the next one's heading above the viewport or under the
-  // sticky header; scroll-padding-top in game.css makes scrollIntoView stop below the header.
+  // sticky header; scroll-margin-top on .view in game.css makes scrollIntoView stop below the header.
   const shown=$(`view-${view}`),header=document.querySelector('.jv-header');if(shown&&shown.getBoundingClientRect().top<(header?header.getBoundingClientRect().bottom:0))shown.scrollIntoView({block:'start'});
   if(view==='analytics'){record('analysis_opened');loadAnalytics();}if(view==='leaderboards')loadLeaderboard();if(view==='profile')loadProfile();}
 // On-screen views omit the per-decision candidate evidence (about a megabyte for a long game); the JSON download asks for all of it.

@@ -12,8 +12,12 @@
   --chart-jev:#7A4E0B;--chart-human:#155A80;
   --empty-art:url(/art/empty.svg)
 }
-/* The shared header is sticky; skip-link targets, scrollIntoView and focus scrolling stop 8px below it, never under it. */
-html{scroll-padding-top:calc(var(--header-h) + var(--sa-t) + 8px)}
+/* The shared header is sticky. The skip-link target and the views and their headings (tab switch) stop 8px below it; arrow-key
+   focus on cells is kept clear of it in game.js (revealBelowHeader). This is set on those targets, not as html scroll-padding, which would also make focus moving
+   into the sticky header itself (Shift+Tab, closing the menu) scroll the page. */
+#human-board,.view,.view h1{scroll-margin-top:calc(var(--header-h) + var(--sa-t) + 8px)}
+/* "Local heuristic won" stays on one line in My stats history; the table already scrolls sideways on phones. */
+#profile-content td:nth-child(4){white-space:nowrap}
 body{font-size:var(--fs-sm)}button,input,select{font:inherit}
 button,.button,select,input[type=date]{border:1px solid var(--ink);border-radius:0;background:var(--paper);color:var(--text);padding:var(--s2) var(--s4);min-height:var(--tap)}
 button,.button{cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:var(--s2);font-family:var(--font-pixel);font-size:var(--fs-md);font-weight:400;letter-spacing:.04em;white-space:nowrap;box-shadow:var(--drop-sm)}
