@@ -1,4 +1,4 @@
-<p align="center"><img src="assets/banner.jpg" alt="Pixel-art robot Jev solving a nine-by-nine Sudoku grid filled with coloured dots and blocks." width="100%"></p>
+<p align="center"><img src="assets/banner.png" alt="Flat pink and ink pixel-window banner for Typedoku showing two sudoku boards racing side by side, a typed next-action panel and the Jev robot" width="100%"></p>
 
 <div align="center">
 

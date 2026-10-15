@@ -1,23 +1,16 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" preserveAspectRatio="none" width="64" height="64">
-  <defs>
-    <linearGradient id="edge" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#e6f1ff"/>
-      <stop offset="0.35" stop-color="#8dbcff"/>
-      <stop offset="1" stop-color="#2f74d0"/>
-    </linearGradient>
-    <linearGradient id="face" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#5b9cf2"/>
-      <stop offset="0.5" stop-color="#3b82e6"/>
-      <stop offset="1" stop-color="#2465c8"/>
-    </linearGradient>
-    <linearGradient id="gloss" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#ffffff" stop-opacity="0.45"/>
-      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
-    </linearGradient>
-  </defs>
-  <rect x="0" y="5" width="64" height="59" rx="12" fill="#12356b"/>
-  <rect x="0" y="0" width="64" height="59" rx="12" fill="url(#edge)"/>
-  <rect x="4" y="4" width="56" height="51" rx="9" fill="url(#face)"/>
-  <rect x="4" y="4" width="56" height="24" rx="9" fill="url(#gloss)"/>
-  <path d="M12 6.5H32" stroke="#ffffff" stroke-opacity="0.8" stroke-width="2" stroke-linecap="round"/>
+  <!-- The #pressed fragment exposes the ink face for image consumers.
+       A host button must set its own overlaid label to paper when pressed. -->
+  <style>
+    #pressed { display: none; }
+    #pressed:target { display: inline; }
+    svg:active .face { fill: #1E1E1E; }
+    svg:active text { fill: #FEFEFE; }
+  </style>
+  <g shape-rendering="crispEdges">
+    <rect x="3" y="3" width="61" height="61" fill="#1E1E1E"/>
+    <rect width="61" height="61" fill="#1E1E1E"/>
+    <rect class="face" x="1" y="1" width="59" height="59" fill="#DEDEDE"/>
+    <rect id="pressed" x="1" y="1" width="59" height="59" fill="#1E1E1E"/>
+  </g>
 </svg>
