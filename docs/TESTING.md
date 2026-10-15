@@ -12,7 +12,7 @@ Regenerated for the Workers build; the numbers are written by the commands thems
 | Isolated CLI/SQLite maintenance scenarios | `npm run test:maintenance` | `reports/workers/maintenance-results.json` |
 | Offline selector benchmark | `npm run benchmark -- --puzzles 2` | `reports/benchmark.json` (unchanged, see below) |
 
-These are different granularities; do not add scenario counts to the Node test count. `reports/` files outside `reports/workers/` (including `release-summary.json`, `node-tests.tap`, the screenshots referenced by the README, and the container-era run logs) are the **original container-era evidence** and are kept as history. They describe the previous Node/Docker build and are not evidence for the Workers build. Never edit generated outputs by hand: rerun the command.
+These are different granularities; do not add scenario counts to the Node test count. `reports/` files outside `reports/workers/` (including `release-summary.json`, `node-tests.tap` and the container-era run logs) are the **original container-era evidence** and are kept as history. They describe the previous Node/Docker build and are not evidence for the Workers build. The exception is the screenshots `reports/desktop-game.png`, `desktop-analytics.png` (both embedded in the README) and `mobile-game.png`: they are copies of the current `reports/workers/` screenshots from the smoke test. Never edit generated outputs by hand: rerun the command.
 
 ## Node coverage by behavior
 

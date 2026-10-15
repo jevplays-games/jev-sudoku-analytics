@@ -1,4 +1,4 @@
-/* Typedoku. Every colour comes from the shared jevplay.games tokens in brand.css; this file defines no hex values.
+/* Typedoku. Every colour comes from the shared jevplay.games tokens in brand.css; the only hex values here are the two D8 chart tokens.
    Board legend, readable without colour: givens are grey tiles with Inter 700 digits; entries are paper wells with VT323 digits;
    a blocked entry is hatched and carries a cross; the selected cell has a magenta ring and a corner tick. */
 :root{
