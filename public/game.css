@@ -159,7 +159,8 @@ details pre{overflow:auto;font-size:var(--fs-xs);max-height:24rem;background:var
 /* Stacked windows on My stats keep the same gap as the rest of the page instead of sitting on each other's shadow. */
 #view-profile>.jv-panel{margin-top:var(--s5)}
 .consent{display:flex;align-items:start;gap:var(--s2);font-size:var(--fs-sm)}.consent input{accent-color:var(--ink);margin-top:4px;min-width:20px;min-height:20px}
-.button input[type=file]{max-width:15rem;font-size:var(--fs-xs)}
+/* The replay-import picker is a key holding a file input: on phones it wraps inside its window instead of running off-screen. */
+label.button{max-width:100%;flex-wrap:wrap;white-space:normal}.button input[type=file]{max-width:min(15rem,100%);min-width:0;font-size:var(--fs-xs)}
 .replay-panel{margin-bottom:var(--s4)}.replay-panel label{display:flex;flex-wrap:wrap;align-items:center;gap:var(--s4)}.replay-panel input{flex:1;min-width:10rem;min-height:var(--tap);accent-color:var(--ink)}
 footer{border-top:1px solid var(--ink);padding:var(--s5) 0 var(--s6);display:flex;flex-wrap:wrap;justify-content:space-between;gap:var(--s3);color:var(--ink);font-family:var(--font-pixel);font-size:var(--fs-md);letter-spacing:.06em}
 dialog{background:var(--grey);color:var(--text);max-width:40rem;width:calc(100% - var(--s6));max-height:85vh;max-height:85dvh;border:1px solid var(--ink);border-radius:0;padding:var(--s5);box-shadow:var(--raise)}
