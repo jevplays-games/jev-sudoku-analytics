@@ -1,0 +1,40 @@
+name: Deploy to GoDaddy Node.js Hosting
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: godaddy-deploy-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.16.0'
+      - run: npm test
+  deploy:
+    needs: test
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      GODADDY_PAT: ${{ secrets.GODADDY_PAT }}
+      GODADDY_APP_ID: ${{ vars.GODADDY_APP_ID || 'NODEJS-34t4xdpx2l' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.16.0'
+      - if: env.GODADDY_PAT == ''
+        run: echo "::warning::GODADDY_PAT secret is not set; skipping the GoDaddy deploy."
+      # The committed tree only; runtime secrets live in the app's GoDaddy Secrets, never in the zip.
+      - if: env.GODADDY_PAT != ''
+        run: git archive --format=zip -o deploy.zip HEAD
+      - if: env.GODADDY_PAT != ''
+        run: node scripts/godaddy-deploy.js deploy.zip

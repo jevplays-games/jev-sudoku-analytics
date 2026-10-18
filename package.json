@@ -25,6 +25,7 @@
     "discord:register": "node --env-file-if-exists=.env scripts/register-discord.js",
     "deploy": "npx --yes wrangler@4.35.0 deploy",
     "db:remote": "npx --yes wrangler@4.35.0 d1 migrations apply jev-sudoku --remote",
-    "db:local": "npx --yes wrangler@4.35.0 d1 migrations apply jev-sudoku --local"
+    "db:local": "npx --yes wrangler@4.35.0 d1 migrations apply jev-sudoku --local",
+    "deploy:godaddy": "node --env-file-if-exists=.env scripts/godaddy-deploy.js"
   }
 }
